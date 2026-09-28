@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json.schemastore.org/eas.json",
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  }
+}

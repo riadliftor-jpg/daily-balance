@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/daily-balance/"
+title = "Daily Balance"
+description = "A multilingual wellness companion for balancing work and vacation routines with weight progress, hydration, meals, gentle exercise, reminders, and practical personalized guidance."
+version = "1.0.0"
+id = "artifacts/daily-balance"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/daily-balance/" ]
+localPort = 22823
+
+[services.development]
+run = "pnpm --filter @workspace/daily-balance run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/daily-balance", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/daily-balance", "run", "serve" ]
+
+[services.env]
+PORT = "22823"
+BASE_PATH = "/daily-balance/"
