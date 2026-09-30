@@ -757,6 +757,388 @@ export default function HomeScreen() {
             style={[
               styles.sectionTitle,
               { color: colors.navy },
+                    ]}
+            >
+              {dayName} · {t.today}
+            </Text>
+          </View>
+
+          <View style={styles.headerActions}>
+            <Pressable
+              accessibilityLabel={t.reminders}
+              testID="home-reminders"
+              onPress={() => undefined}
+              style={({ pressed }) => [
+                styles.iconButton,
+                { backgroundColor: colors.card },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Feather
+                name="bell"
+                size={19}
+                color={colors.navy}
+              />
+            </Pressable>
+
+            <Pressable
+              accessibilityLabel={t.profile}
+              testID="home-profile"
+              onPress={() => undefined}
+              style={({ pressed }) => [
+                styles.iconButton,
+                { backgroundColor: colors.card },
+                pressed && { opacity: 0.7 },
+              ]}
+            >
+              <Feather
+                name="user"
+                size={19}
+                color={colors.navy}
+              />
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Romantic Narimane surprise */}
+        <RomanticWelcome
+          language={state.language}
+          colors={colors}
+        />
+
+        <View
+          style={[
+            styles.modeSwitch,
+            { backgroundColor: colors.mint },
+          ]}
+        >
+          <View style={styles.modeCopy}>
+            <Text
+              style={[
+                styles.modeLabel,
+                { color: colors.navy },
+              ]}
+            >
+              {state.mode === 'work'
+                ? t.work
+                : t.vacation}
+            </Text>
+
+            <Text
+              style={[
+                styles.modeSubcopy,
+                { color: colors.secondaryForeground },
+              ]}
+            >
+              {state.mode === 'work'
+                ? t.workSubtitle
+                : t.vacationSubtitle}
+            </Text>
+          </View>
+
+          <View style={styles.modePill}>
+            <Feather
+              name={
+                state.mode === 'work'
+                  ? 'briefcase'
+                  : 'sun'
+              }
+              size={15}
+              color={colors.navy}
+            />
+
+            <Text
+              style={[
+                styles.modePillText,
+                { color: colors.navy },
+              ]}
+            >
+              {state.mode === 'work' ? 'W' : 'V'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.sectionHeading}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.navy },
+            ]}
+          >
+            {t.today}
+          </Text>
+
+          <Text
+            style={[
+              styles.sectionMeta,
+              { color: colors.mutedForeground },
+            ]}
+          >
+            {completedTasks}/{totalTasks} {t.tasks}
+          </Text>
+        </View>
+
+        <View style={styles.metricRow}>
+          <View
+            style={[
+              styles.metricCard,
+              { backgroundColor: colors.card },
+            ]}
+          >
+            <View
+              style={[
+                styles.metricIcon,
+                { backgroundColor: colors.lavender },
+              ]}
+            >
+              <Feather
+                name="activity"
+                size={18}
+                color={colors.lavenderStrong}
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.metricLabel,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              {t.weight}
+            </Text>
+
+            <Text
+              style={[
+                styles.metricValue,
+                { color: colors.navy },
+              ]}
+            >
+              {state.currentWeight.toFixed(1)}{' '}
+              <Text style={styles.metricUnit}>
+                {t.kg}
+              </Text>
+            </Text>
+
+            <View style={styles.metricFooter}>
+              <Text
+                style={[
+                  styles.metricFooterText,
+                  { color: colors.success },
+                ]}
+              >
+                {progress}%
+              </Text>
+
+              <Text
+                style={[
+                  styles.metricFooterText,
+                  { color: colors.mutedForeground },
+                ]}
+              >
+                {t.progress}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.progressTrack,
+                { backgroundColor: colors.muted },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    backgroundColor:
+                      colors.lavenderStrong,
+                    width: `${Math.min(
+                      100,
+                      progress
+                    )}%`,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.metricCard,
+              { backgroundColor: colors.card },
+            ]}
+          >
+            <View
+              style={[
+                styles.metricIcon,
+                { backgroundColor: colors.mint },
+              ]}
+            >
+              <Feather
+                name="droplet"
+                size={18}
+                color={colors.primary}
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.metricLabel,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              {t.water}
+            </Text>
+
+            <Text
+              style={[
+                styles.metricValue,
+                { color: colors.navy },
+              ]}
+            >
+              {todayLog.waterGlasses}
+              <Text style={styles.metricUnit}>
+                /8
+              </Text>
+            </Text>
+
+            <Text
+              style={[
+                styles.metricFooterText,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              {t.glasses} · {t.goal}
+            </Text>
+
+            <View
+              style={[
+                styles.progressTrack,
+                { backgroundColor: colors.muted },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    backgroundColor: colors.primary,
+                    width: `${
+                      (todayLog.waterGlasses / 8) *
+                      100
+                    }%`,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.waterCard,
+            { backgroundColor: colors.navy },
+          ]}
+        >
+          <View style={styles.waterHeader}>
+            <View>
+              <Text
+                style={[
+                  styles.darkCardEyebrow,
+                  { color: colors.mintStrong },
+                ]}
+              >
+                {t.water}
+              </Text>
+
+              <Text
+                style={[
+                  styles.darkCardTitle,
+                  { color: colors.card },
+                ]}
+              >
+                {todayLog.waterGlasses < 8
+                  ? `${8 - todayLog.waterGlasses} ${t.glasses} ${t.remaining}`
+                  : t.allDone}
+              </Text>
+            </View>
+
+            <Feather
+              name="droplet"
+              size={25}
+              color={colors.mintStrong}
+            />
+          </View>
+
+          <View style={styles.glassRow}>
+            {Array.from(
+              { length: 8 },
+              (_, index) => {
+                const filled =
+                  index < todayLog.waterGlasses;
+
+                return (
+                  <Pressable
+                    key={index}
+                    accessibilityLabel={`${t.water} ${
+                      index + 1
+                    }`}
+                    testID={`water-glass-${
+                      index + 1
+                    }`}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      toggleWater(
+                        index,
+                        todayDay,
+                        state.mode
+                      );
+                    }}
+                    style={({ pressed }) => [
+                      styles.glass,
+                      {
+                        backgroundColor: filled
+                          ? colors.mintStrong
+                          : 'rgba(255,255,255,0.14)',
+                        borderColor: filled
+                          ? colors.mintStrong
+                          : 'rgba(255,255,255,0.26)',
+                      },
+                      pressed && {
+                        transform: [
+                          { scale: 0.9 },
+                        ],
+                      },
+                    ]}
+                  >
+                    <Feather
+                      name="droplet"
+                      size={14}
+                      color={
+                        filled
+                          ? colors.navy
+                          : colors.card
+                      }
+                    />
+                  </Pressable>
+                );
+              }
+            )}
+          </View>
+
+          <Text
+            style={[
+              styles.waterHint,
+              { color: colors.mint },
+            ]}
+          >
+            {todayLog.waterGlasses}/8 {t.glasses}
+          </Text>
+        </View>
+
+        <View style={styles.sectionHeading}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: colors.navy },
            />}</View></Pressable>)}
 
         <View style={styles.sectionHeading}><Text style={[styles.sectionTitle, { color: colors.navy }]}>{t.todaySchedule}</Text><Text style={[styles.sectionMeta, { color: colors.mutedForeground }]}>{completedSchedule}/{schedule.length} {t.completed}</Text></View>
