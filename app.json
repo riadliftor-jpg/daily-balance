@@ -1,29 +1,36 @@
 {
   "expo": {
-    "name": "Daily Balance",
-    "slug": "daily-balance",
+    "name": "Narimane Daily Balance",
+    "slug": "narimane-daily-balance",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "daily-balance",
+    "scheme": "narimane-daily-balance",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "splash": {
       "image": "./assets/images/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+
     "ios": {
       "supportsTablet": false
     },
+
     "android": {
-      "package": "com.dailybalance.app",
+      "package": "com.narimane.dailybalance",
       "versionCode": 1,
-      "permissions": ["POST_NOTIFICATIONS"]
+      "permissions": [
+        "POST_NOTIFICATIONS"
+      ]
     },
+
     "web": {
       "favicon": "./assets/images/icon.png"
     },
+
     "plugins": [
       [
         "expo-router",
@@ -35,10 +42,12 @@
       "expo-web-browser",
       "expo-notifications"
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
+
     "extra": {
       "eas": {
         "projectId": "d6268f0d-7510-4355-878e-ba9c8e791337"
