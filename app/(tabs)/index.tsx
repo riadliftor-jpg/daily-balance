@@ -12,12 +12,14 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useColors } from '@/hooks/useColors';
 import { useDailyBalance } from '@/context/DailyBalanceContext';
+import { useColors } from '@/hooks/useColors';
 import { useCopy, getDayNames } from '@/lib/i18n';
 import { getWeeklyPlan } from '@/lib/weeklyPlan';
 
-const romanticMessages = {
+type Language = 'ar' | 'fr' | 'en';
+
+const romanticMessages: Record<Language, string[]> = {
   ar: [
     'Narimane ❤️ وجودك يجعل يومي أجمل.',
     'لغز اليوم: شيء لا يُرى، لكن القلب يشعر به… ما هو؟ ❤️',
@@ -51,14 +53,13 @@ function RomanticWelcome({
   language,
   colors,
 }: {
-  language: 'ar' | 'fr' | 'en';
+  language: Language;
   colors: any;
 }) {
-  const today = new Date().getDate();
-
+  const day = new Date().getDate();
   const messages = romanticMessages[language];
-  const message = messages[today % messages.length];
-  const animationType = today % 3;
+  const message = messages[day % messages.length];
+  const animationType = day % 3;
 
   const scale = useRef(new Animated.Value(0.35)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -70,11 +71,11 @@ function RomanticWelcome({
   const openMessage = () => {
     if (opened) return;
 
-    Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Success
-    ).catch(() => undefined);
-
     setOpened(true);
+
+    Haptics.notificationAsync(
+      Haptics.NotificationFeedbackType.Success,
+    ).catch(() => undefined);
 
     if (animationType === 0) {
       Animated.parallel([
@@ -103,7 +104,10 @@ function RomanticWelcome({
           }),
         ]),
       ]).start();
-    } else if (animationType === 1) {
+      return;
+    }
+
+    if (animationType === 1) {
       scale.setValue(0.7);
       opacity.setValue(0);
 
@@ -121,40 +125,41 @@ function RomanticWelcome({
           useNativeDriver: true,
         }),
       ]).start();
-    } else {
-      rotate.setValue(-1);
-
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 450,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          friction: 5,
-          tension: 65,
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.timing(rotate, {
-            toValue: 1,
-            duration: 180,
-            useNativeDriver: true,
-          }),
-          Animated.timing(rotate, {
-            toValue: -1,
-            duration: 180,
-            useNativeDriver: true,
-          }),
-          Animated.spring(rotate, {
-            toValue: 0,
-            friction: 4,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
+      return;
     }
+
+    rotate.setValue(-1);
+
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 450,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        friction: 5,
+        tension: 65,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(rotate, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.timing(rotate, {
+          toValue: -1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.spring(rotate, {
+          toValue: 0,
+          friction: 4,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
   };
 
   const rotateInterpolation = rotate.interpolate({
@@ -248,6 +253,46 @@ function RomanticWelcome({
   );
 }
 
+function CheckButton({
+  checked,
+  onPress,
+  colors,
+  label,
+}: {
+  checked: boolean;
+  onPress: () => void;
+  colors: any;
+  label: string;
+}) {
+  return (
+    <Pressable
+      accessibilityLabel={label}
+      onPress={onPress}
+      hitSlop={8}
+      style={({ pressed }) => [
+        styles.checkButton,
+        {
+          backgroundColor: checked
+            ? colors.primary
+            : colors.card,
+          borderColor: checked
+            ? colors.primary
+            : colors.border,
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
+    >
+      {checked ? (
+        <Feather
+          name="check"
+          size={15}
+          color="#FFFFFF"
+        />
+      ) : null}
+    </Pressable>
+  );
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -257,6 +302,8 @@ export default function HomeScreen() {
     todayDay,
     getLog,
     toggleWater,
+    toggleMeal,
+    toggleExercise,
     toggleSchedule,
     advice,
   } = useDailyBalance();
@@ -265,12 +312,12 @@ export default function HomeScreen() {
 
   const todayPlan = getWeeklyPlan(
     state.language,
-    todayDay
+    todayDay,
   );
 
   const todayLog = getLog(
     todayDay,
-    state.mode
+    state.mode,
   );
 
   const schedule =
@@ -279,16 +326,16 @@ export default function HomeScreen() {
       : todayPlan.vacationSchedule;
 
   const completedMeals = todayPlan.meals.filter(
-    (meal) => todayLog.meals[meal.id]
+    (meal) => todayLog.meals[meal.id],
   ).length;
 
   const completedExercises =
     todayPlan.exercises.filter(
-      (exercise) => todayLog.exercises[exercise.id]
+      (exercise) => todayLog.exercises[exercise.id],
     ).length;
 
   const completedSchedule = schedule.filter(
-    (item) => todayLog.schedule[item.id]
+    (item) => todayLog.schedule[item.id],
   ).length;
 
   const completedTasks =
@@ -304,16 +351,18 @@ export default function HomeScreen() {
   const progress = useMemo(() => {
     const current = Number(state.currentWeight);
     const target = Number(state.targetWeight);
+    const startWeight = 73.5;
 
-    if (!Number.isFinite(current) || !Number.isFinite(target)) {
+    if (
+      !Number.isFinite(current) ||
+      !Number.isFinite(target)
+    ) {
       return 0;
     }
 
     if (current <= target) {
       return 100;
     }
-
-    const startWeight = 73.5;
 
     if (startWeight <= target) {
       return 0;
@@ -325,12 +374,20 @@ export default function HomeScreen() {
       100;
 
     return Math.round(
-      Math.min(100, Math.max(5, value))
+      Math.min(100, Math.max(5, value)),
     );
   }, [
     state.currentWeight,
     state.targetWeight,
   ]);
+
+  const waterProgress = Math.min(
+    100,
+    Math.max(
+      0,
+      (todayLog.waterGlasses / 8) * 100,
+    ),
+  );
 
   const dayName =
     getDayNames(state.language)[todayDay];
@@ -345,10 +402,16 @@ export default function HomeScreen() {
           month: 'long',
           day: 'numeric',
           year: 'numeric',
-        }
+        },
       ).format(new Date()),
-    [state.language]
+    [state.language],
   );
+
+  const displayName =
+    state.profileName &&
+    state.profileName !== 'Alex'
+      ? state.profileName
+      : 'Narimane';
 
   return (
     <View
@@ -356,23 +419,28 @@ export default function HomeScreen() {
         styles.screen,
         {
           backgroundColor: colors.background,
-          paddingTop: insets.top,
         },
       ]}
     >
       <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.content,
           {
-            paddingBottom:
-              insets.bottom + 100,
+            paddingTop: insets.top + 18,
+            paddingBottom: insets.bottom + 110,
           },
         ]}
-        showsVerticalScrollIndicator={false}
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerText}>
+          <View
+            style={[
+              styles.headerText,
+              state.language === 'ar' &&
+                styles.headerTextArabic,
+            ]}
+          >
             <Text
               style={[
                 styles.eyebrow,
@@ -388,17 +456,396 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.greeting,
-                { color: colors.navy },
+                {
+                  color: colors.navy,
+                },
               ]}
             >
               {t.greeting},{' '}
-              {state.profileName || 'Narimane'}
+              {displayName}
             </Text>
 
             <Text
               style={[
                 styles.dayLabel,
-                { color: colors.primary },
+                {
+                  color: colors.primary,
+                },
+              ]}
+            >
+              {dayName} · {t.today}
+            </Text>
+          </View>
+
+          <View style={styles.headerActions}>
+            <View
+              style={[
+                styles.iconButton,
+                {
+                  backgroundColor:
+                    colors.card,
+                },
+              ]}
+            >
+              <Feather
+                name="heart"
+                size={19}
+                color={colors.coral}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Romantic Narimane surprise */}
+        <RomanticWelcome
+          language={state.language}
+          colors={colors}
+        />
+
+        {/* Mode */}
+        <View
+          style={[
+            styles.modeSwitch,
+            {
+              backgroundColor:
+                colors.mint,
+            },
+          ]}
+        >
+          <View style={styles.modeCopy}>
+            <Text
+              style={[
+                styles.modeLabel,
+                {
+                  color: colors.navy,
+                },
+              ]}
+            >
+              {state.mode === 'work'
+                ? t.work
+                : t.vacation}
+            </Text>
+
+            <Text
+              style={[
+                styles.modeSubcopy,
+                {
+                  color:
+                    colors.secondaryForeground,
+                },
+              ]}
+            >
+              {state.mode === 'work'
+                ? t.workSubtitle
+                : t.vacationSubtitle}
+            </Text>
+          </View>
+
+          <View style={styles.modePill}>
+            <Feather
+              name={
+                state.mode === 'work'
+                  ? 'briefcase'
+                  : 'sun'
+              }
+              size={15}
+              color={colors.navy}
+            />
+
+            <Text
+              style={[
+                styles.modePillText,
+                {
+                  color: colors.navy,
+                },
+              ]}
+            >
+              {state.mode === 'work'
+                ? 'W'
+                : 'V'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Today heading */}
+        <View style={styles.sectionHeading}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              {
+                color: colors.navy,
+              },
+            ]}
+          >
+            {t.today}
+          </Text>
+
+          <Text
+            style={[
+              styles.sectionMeta,
+              {
+                color:
+                  colors.mutedForeground,
+              },
+            ]}
+          >
+            {completedTasks}/{totalTasks}{' '}
+            {t.tasks}
+          </Text>
+        </View>
+
+        {/* Metrics */}
+        <View style={styles.metricRow}>
+          <View
+            style={[
+              styles.metricCard,
+              {
+                backgroundColor:
+                  colors.card,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.metricIcon,
+                {
+                  backgroundColor:
+                    colors.lavender,
+                },
+              ]}
+            >
+              <Feather
+                name="activity"
+                size={18}
+                color={
+                  colors.lavenderStrong
+                }
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.metricLabel,
+                {
+                  color:
+                    colors.mutedForeground,
+                },
+              ]}
+            >
+              {t.weight}
+            </Text>
+
+            <Text
+              style={[
+                styles.metricValue,
+                {
+                  color: colors.navy,
+                },
+              ]}
+            >
+              {Number(
+                state.currentWeight,
+              ).toFixed(1)}{' '}
+              <Text
+                style={styles.metricUnit}
+              >
+                {t.kg}
+              </Text>
+            </Text>
+
+            <View style={styles.metricFooter}>
+              <Text
+                style={[
+                  styles.metricFooterText,
+                  {
+                    color:
+                      colors.success,
+                  },
+                ]}
+              >
+                {progress}%
+              </Text>
+
+              <Text
+                style={[
+                  styles.metricFooterText,
+                  {
+                    color:
+                      colors.mutedForeground,
+                  },
+                ]}
+              >
+                {t.progress}
+              </Text>
+            </View>
+
+            <View
+              style={[
+                styles.progressTrack,
+                {
+                  backgroundColor:
+                    colors.muted,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${progress}%`,
+                    backgroundColor:
+                      colors.lavenderStrong,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.metricCard,
+              {
+                backgroundColor:
+                  colors.card,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.metricIcon,
+                {
+                  backgroundColor:
+                    colors.mint,
+                },
+              ]}
+            >
+              <Feather
+                name="droplet"
+                size={18}
+                color={colors.primary}
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.metricLabel,
+                {
+                  color:
+                    colors.mutedForeground,
+                },
+              ]}
+            >
+              {t.water}
+            </Text>
+
+            <Text
+              style={[
+                styles.metricValue,
+                {
+                  color: colors.navy,
+                },
+              ]}
+            >
+              {todayLog.waterGlasses}
+              <Text
+                style={styles.metricUnit}
+              >
+                /8
+              </Text>
+            </Text>
+
+            <Text
+              style={[
+                styles.metricFooterText,
+                {
+                  color:
+                    colors.mutedForeground,
+                },
+              ]}
+            >
+              {t.glasses} · {t.goal}
+            </Text>
+
+            <View
+              style={[
+                styles.progressTrack,
+                {
+                  backgroundColor:
+                    colors.muted,
+                },
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${waterProgress}%`,
+                    backgroundColor:
+                      colors.primary,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Water */}
+        <View
+          style={[
+            styles.waterCard,
+            {
+              backgroundColor:
+                colors.navy,
+            },
+          ]}
+        >
+          <View style={styles.waterHeader}>
+            <View>
+              <Text
+                style={[
+                  styles.darkCardEyebrow,
+                  {
+                    color:
+                      colors.mintStrong,
+                  },
+                ]}
+              >
+                {t.water}
+              </Text>
+
+              <Text
+                style={[
+                  styles.darkCardTitle,
+                  {
+                    color: colors.card,
+                  },
+                ]}
+              >
+                {todayLog.waterGlasses < 8
+                  ? `${8 - todayLog.waterGlasses} ${t.glasses} ${t.remaining}`
+                  : t.allDone}
+              </Text>
+            </View>
+
+            <Feather
+              name="droplet"
+              size={25}
+              color={colors.mintStrong}
+            />
+          </View>
+
+          <View style={styles.glassRow}>
+            {Array.from(
+              { length: 8 },
+              (_, index) => {
+                const filled =
+                  index <
+                  todayLog.waterGlasses;
+
+                return (
+                  <Pressable
+                    key={index}
+                    accessibilityLabel={                { color: colors.primary },
               ]}
             >
               {dayName} · {t.today}
