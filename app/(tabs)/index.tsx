@@ -178,7 +178,7 @@ function RomanticWelcome({
         color="#FFFFFF"
         style={styles.gift}
       />
-    </View>
+    </Pressable>
   );
 }
 
