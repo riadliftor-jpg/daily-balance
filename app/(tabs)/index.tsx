@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDailyBalance } from '@/context/DailyBalanceContext';
 import { useColors } from '@/hooks/useColors';
-import { useCopy, getDayNames } from '@/lib/i18n';
+import { getDayNames, useCopy } from '@/lib/i18n';
 import { getWeeklyPlan } from '@/lib/weeklyPlan';
 
 type Language = 'ar' | 'fr' | 'en';
@@ -57,16 +57,15 @@ function RomanticWelcome({
   colors: any;
 }) {
   const day = new Date().getDate();
-  const messages = romanticMessages[language];
-  const message = messages[day % messages.length];
-  const animationType = day % 3;
-
-  const scale = useRef(new Animated.Value(0.35)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const rotate = useRef(new Animated.Value(0)).current;
-  const heartScale = useRef(new Animated.Value(1)).current;
+  const message = romanticMessages[language][
+    day % romanticMessages[language].length
+  ];
 
   const [opened, setOpened] = useState(false);
+
+  const scale = useRef(new Animated.Value(0.5)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
 
   const openMessage = () => {
     if (opened) return;
@@ -74,98 +73,36 @@ function RomanticWelcome({
     setOpened(true);
 
     Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Success,
+      Haptics.NotificationFeedbackType.Success
     ).catch(() => undefined);
 
-    if (animationType === 0) {
-      Animated.parallel([
-        Animated.spring(scale, {
-          toValue: 1,
-          friction: 5,
-          tension: 70,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 500,
-          easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
-        }),
-        Animated.sequence([
-          Animated.timing(heartScale, {
-            toValue: 1.35,
-            duration: 180,
-            useNativeDriver: true,
-          }),
-          Animated.spring(heartScale, {
-            toValue: 1,
-            friction: 4,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
-      return;
-    }
-
-    if (animationType === 1) {
-      scale.setValue(0.7);
-      opacity.setValue(0);
-
-      Animated.parallel([
-        Animated.spring(scale, {
-          toValue: 1,
-          friction: 7,
-          tension: 55,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 650,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start();
-      return;
-    }
-
-    rotate.setValue(-1);
-
     Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 450,
-        useNativeDriver: true,
-      }),
       Animated.spring(scale, {
         toValue: 1,
         friction: 5,
-        tension: 65,
+        tension: 70,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 500,
+        easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
       Animated.sequence([
-        Animated.timing(rotate, {
+        Animated.timing(heartScale, {
+          toValue: 1.35,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+        Animated.spring(heartScale, {
           toValue: 1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotate, {
-          toValue: -1,
-          duration: 180,
-          useNativeDriver: true,
-        }),
-        Animated.spring(rotate, {
-          toValue: 0,
           friction: 4,
           useNativeDriver: true,
         }),
       ]),
     ]).start();
   };
-
-  const rotateInterpolation = rotate.interpolate({
-    inputRange: [-1, 0, 1],
-    outputRange: ['-3deg', '0deg', '3deg'],
-  });
 
   const surpriseText =
     language === 'ar'
@@ -184,27 +121,24 @@ function RomanticWelcome({
   return (
     <Pressable
       onPress={openMessage}
-      accessibilityLabel="Narimane romantic message"
       style={({ pressed }) => [
         styles.romanticCard,
         {
           backgroundColor: colors.coral,
-          transform: [{ scale: pressed ? 0.985 : 1 }],
+          opacity: pressed ? 0.94 : 1,
         },
       ]}
     >
       <Animated.View
         style={[
           styles.romanticHeartCircle,
-          {
-            transform: [{ scale: heartScale }],
-          },
+          { transform: [{ scale: heartScale }] },
         ]}
       >
         <Text style={styles.romanticHeart}>♥</Text>
       </Animated.View>
 
-      <View style={styles.romanticTextWrap}>
+      <View style={styles.romanticContent}>
         <Text style={styles.romanticName}>Narimane</Text>
 
         {!opened ? (
@@ -221,10 +155,7 @@ function RomanticWelcome({
           <Animated.View
             style={{
               opacity,
-              transform: [
-                { scale },
-                { rotate: rotateInterpolation },
-              ],
+              transform: [{ scale }],
             }}
           >
             <Text
@@ -257,38 +188,34 @@ function CheckButton({
   checked,
   onPress,
   colors,
-  label,
 }: {
   checked: boolean;
   onPress: () => void;
   colors: any;
-  label: string;
 }) {
   return (
     <Pressable
-      accessibilityLabel={label}
       onPress={onPress}
       hitSlop={8}
-      style={({ pressed }) => [
+      style={[
         styles.checkButton,
         {
           backgroundColor: checked
             ? colors.primary
-            : colors.card,
+            : colors.background,
           borderColor: checked
             ? colors.primary
             : colors.border,
-          opacity: pressed ? 0.7 : 1,
         },
       ]}
     >
-      {checked ? (
+      {checked && (
         <Feather
           name="check"
-          size={15}
+          size={14}
           color="#FFFFFF"
         />
-      ) : null}
+      )}
     </Pressable>
   );
 }
@@ -305,6 +232,7 @@ export default function HomeScreen() {
     toggleMeal,
     toggleExercise,
     toggleSchedule,
+    setMode,
     advice,
   } = useDailyBalance();
 
@@ -312,12 +240,12 @@ export default function HomeScreen() {
 
   const todayPlan = getWeeklyPlan(
     state.language,
-    todayDay,
+    todayDay
   );
 
   const todayLog = getLog(
     todayDay,
-    state.mode,
+    state.mode
   );
 
   const schedule =
@@ -325,18 +253,22 @@ export default function HomeScreen() {
       ? todayPlan.workSchedule
       : todayPlan.vacationSchedule;
 
-  const completedMeals = todayPlan.meals.filter(
-    (meal) => todayLog.meals[meal.id],
-  ).length;
+  const completedMeals =
+    todayPlan.meals.filter(
+      (meal) => todayLog.meals[meal.id]
+    ).length;
 
   const completedExercises =
     todayPlan.exercises.filter(
-      (exercise) => todayLog.exercises[exercise.id],
+      (exercise) =>
+        todayLog.exercises[exercise.id]
     ).length;
 
-  const completedSchedule = schedule.filter(
-    (item) => todayLog.schedule[item.id],
-  ).length;
+  const completedSchedule =
+    schedule.filter(
+      (item) =>
+        todayLog.schedule[item.id]
+    ).length;
 
   const completedTasks =
     completedMeals +
@@ -351,7 +283,6 @@ export default function HomeScreen() {
   const progress = useMemo(() => {
     const current = Number(state.currentWeight);
     const target = Number(state.targetWeight);
-    const startWeight = 73.5;
 
     if (
       !Number.isFinite(current) ||
@@ -364,6 +295,8 @@ export default function HomeScreen() {
       return 100;
     }
 
+    const startWeight = 73.5;
+
     if (startWeight <= target) {
       return 0;
     }
@@ -374,7 +307,7 @@ export default function HomeScreen() {
       100;
 
     return Math.round(
-      Math.min(100, Math.max(5, value)),
+      Math.min(100, Math.max(0, value))
     );
   }, [
     state.currentWeight,
@@ -383,28 +316,7 @@ export default function HomeScreen() {
 
   const waterProgress = Math.min(
     100,
-    Math.max(
-      0,
-      (todayLog.waterGlasses / 8) * 100,
-    ),
-  );
-
-  const dayName =
-    getDayNames(state.language)[todayDay];
-
-  const dateLabel = useMemo(
-    () =>
-      new Intl.DateTimeFormat(
-        state.language === 'ar'
-          ? 'ar'
-          : state.language,
-        {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-        },
-      ).format(new Date()),
-    [state.language],
+    (todayLog.waterGlasses / 8) * 100
   );
 
   const displayName =
@@ -413,37 +325,46 @@ export default function HomeScreen() {
       ? state.profileName
       : 'Narimane';
 
+  const dayName =
+    getDayNames(state.language)[todayDay];
+
+  const dateLabel = useMemo(() => {
+    return new Intl.DateTimeFormat(
+      state.language === 'ar'
+        ? 'ar'
+        : state.language,
+      {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }
+    ).format(new Date());
+  }, [state.language]);
+
   return (
     <View
       style={[
         styles.screen,
         {
-          backgroundColor: colors.background,
+          backgroundColor:
+            colors.background,
         },
       ]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.content,
-          {
-            paddingTop: insets.top + 18,
-            paddingBottom: insets.bottom + 110,
-          },
-        ]}
+        contentContainerStyle={{
+          paddingTop: insets.top + 18,
+          paddingHorizontal: 20,
+          paddingBottom: insets.bottom + 110,
+        }}
       >
-        {/* Header */}
+        {/* HEADER */}
         <View style={styles.header}>
-          <View
-            style={[
-              styles.headerText,
-              state.language === 'ar' &&
-                styles.headerTextArabic,
-            ]}
-          >
+          <View style={{ flex: 1 }}>
             <Text
               style={[
-                styles.eyebrow,
+                styles.date,
                 {
                   color:
                     colors.mutedForeground,
@@ -456,69 +377,60 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.greeting,
-                {
-                  color: colors.navy,
-                },
+                { color: colors.navy },
               ]}
             >
-              {t.greeting},{' '}
-              {displayName}
+              {t.greeting}, {displayName}
             </Text>
 
             <Text
               style={[
                 styles.dayLabel,
-                {
-                  color: colors.primary,
-                },
+                { color: colors.primary },
               ]}
             >
               {dayName} · {t.today}
             </Text>
           </View>
 
-          <View style={styles.headerActions}>
-            <View
-              style={[
-                styles.iconButton,
-                {
-                  backgroundColor:
-                    colors.card,
-                },
-              ]}
-            >
-              <Feather
-                name="heart"
-                size={19}
-                color={colors.coral}
-              />
-            </View>
+          <View
+            style={[
+              styles.headerHeart,
+              {
+                backgroundColor:
+                  colors.card,
+              },
+            ]}
+          >
+            <Feather
+              name="heart"
+              size={20}
+              color={colors.coral}
+            />
           </View>
         </View>
 
-        {/* Romantic Narimane surprise */}
+        {/* ROMANTIC NARIMANE MESSAGE */}
         <RomanticWelcome
           language={state.language}
           colors={colors}
         />
 
-        {/* Mode */}
+        {/* WORK / VACATION */}
         <View
           style={[
-            styles.modeSwitch,
+            styles.modeCard,
             {
               backgroundColor:
                 colors.mint,
             },
           ]}
         >
-          <View style={styles.modeCopy}>
+          <View style={{ flex: 1 }}>
             <Text
               style={[
-                styles.modeLabel,
-                {
-                  color: colors.navy,
-                },
+                styles.modeTitle,
+                { color: colors.navy },
               ]}
             >
               {state.mode === 'work'
@@ -528,7 +440,7 @@ export default function HomeScreen() {
 
             <Text
               style={[
-                styles.modeSubcopy,
+                styles.modeSubtitle,
                 {
                   color:
                     colors.secondaryForeground,
@@ -541,421 +453,36 @@ export default function HomeScreen() {
             </Text>
           </View>
 
-          <View style={styles.modePill}>
-            <Feather
-              name={
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              setMode(
                 state.mode === 'work'
-                  ? 'briefcase'
-                  : 'sun'
-              }
-              size={15}
-              color={colors.navy}
-            />
-
-            <Text
-              style={[
-                styles.modePillText,
-                {
-                  color: colors.navy,
-                },
-              ]}
-            >
-              {state.mode === 'work'
-                ? 'W'
-                : 'V'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Today heading */}
-        <View style={styles.sectionHeading}>
-          <Text
+                  ? 'vacation'
+                  : 'work'
+              );
+            }}
             style={[
-              styles.sectionTitle,
-              {
-                color: colors.navy,
-              },
-            ]}
-          >
-            {t.today}
-          </Text>
-
-          <Text
-            style={[
-              styles.sectionMeta,
-              {
-                color:
-                  colors.mutedForeground,
-              },
-            ]}
-          >
-            {completedTasks}/{totalTasks}{' '}
-            {t.tasks}
-          </Text>
-        </View>
-
-        {/* Metrics */}
-        <View style={styles.metricRow}>
-          <View
-            style={[
-              styles.metricCard,
+              styles.modeButton,
               {
                 backgroundColor:
                   colors.card,
               },
             ]}
           >
-            <View
-              style={[
-                styles.metricIcon,
-                {
-                  backgroundColor:
-                    colors.lavender,
-                },
-              ]}
-            >
-              <Feather
-                name="activity"
-                size={18}
-                color={
-                  colors.lavenderStrong
-                }
-              />
-            </View>
-
-            <Text
-              style={[
-                styles.metricLabel,
-                {
-                  color:
-                    colors.mutedForeground,
-                },
-              ]}
-            >
-              {t.weight}
-            </Text>
-
-            <Text
-              style={[
-                styles.metricValue,
-                {
-                  color: colors.navy,
-                },
-              ]}
-            >
-              {Number(
-                state.currentWeight,
-              ).toFixed(1)}{' '}
-              <Text
-                style={styles.metricUnit}
-              >
-                {t.kg}
-              </Text>
-            </Text>
-
-            <View style={styles.metricFooter}>
-              <Text
-                style={[
-                  styles.metricFooterText,
-                  {
-                    color:
-                      colors.success,
-                  },
-                ]}
-              >
-                {progress}%
-              </Text>
-
-              <Text
-                style={[
-                  styles.metricFooterText,
-                  {
-                    color:
-                      colors.mutedForeground,
-                  },
-                ]}
-              >
-                {t.progress}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.progressTrack,
-                {
-                  backgroundColor:
-                    colors.muted,
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${progress}%`,
-                    backgroundColor:
-                      colors.lavenderStrong,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.metricCard,
-              {
-                backgroundColor:
-                  colors.card,
-              },
-            ]}
-          >
-            <View
-              style={[
-                styles.metricIcon,
-                {
-                  backgroundColor:
-                    colors.mint,
-                },
-              ]}
-            >
-              <Feather
-                name="droplet"
-                size={18}
-                color={colors.primary}
-              />
-            </View>
-
-            <Text
-              style={[
-                styles.metricLabel,
-                {
-                  color:
-                    colors.mutedForeground,
-                },
-              ]}
-            >
-              {t.water}
-            </Text>
-
-            <Text
-              style={[
-                styles.metricValue,
-                {
-                  color: colors.navy,
-                },
-              ]}
-            >
-              {todayLog.waterGlasses}
-              <Text
-                style={styles.metricUnit}
-              >
-                /8
-              </Text>
-            </Text>
-
-            <Text
-              style={[
-                styles.metricFooterText,
-                {
-                  color:
-                    colors.mutedForeground,
-                },
-              ]}
-            >
-              {t.glasses} · {t.goal}
-            </Text>
-
-            <View
-              style={[
-                styles.progressTrack,
-                {
-                  backgroundColor:
-                    colors.muted,
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    width: `${waterProgress}%`,
-                    backgroundColor:
-                      colors.primary,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-        </View>
-
-        {/* Water */}
-        <View
-          style={[
-            styles.waterCard,
-            {
-              backgroundColor:
-                colors.navy,
-            },
-          ]}
-        >
-          <View style={styles.waterHeader}>
-            <View>
-              <Text
-                style={[
-                  styles.darkCardEyebrow,
-                  {
-                    color:
-                      colors.mintStrong,
-                  },
-                ]}
-              >
-                {t.water}
-              </Text>
-
-              <Text
-                style={[
-                  styles.darkCardTitle,
-                  {
-                    color: colors.card,
-                  },
-                ]}
-              >
-                {todayLog.waterGlasses < 8
-                  ? `${8 - todayLog.waterGlasses} ${t.glasses} ${t.remaining}`
-                  : t.allDone}
-              </Text>
-            </View>
-
-            <Feather
-              name="droplet"
-              size={25}
-              color={colors.mintStrong}
-            />
-          </View>
-
-          <View style={styles.glassRow}>
-            {Array.from(
-              { length: 8 },
-              (_, index) => {
-                const filled =
-                  index <
-                  todayLog.waterGlasses;
-
-                return (
-                  <Pressable
-                    key={index}
-                    accessibilityLabel={                { color: colors.primary },
-              ]}
-            >
-              {dayName} · {t.today}
-            </Text>
-          </View>
-
-          <View style={styles.headerActions}>
-            <Pressable
-              accessibilityLabel={t.reminders}
-              testID="home-reminders"
-              onPress={() => undefined}
-              style={({ pressed }) => [
-                styles.iconButton,
-                {
-                  backgroundColor:
-                    colors.card,
-                },
-                pressed && {
-                  opacity: 0.7,
-                },
-              ]}
-            >
-              <Feather
-                name="bell"
-                size={19}
-                color={colors.navy}
-              />
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel={t.profile}
-              testID="home-profile"
-              onPress={() => undefined}
-              style={({ pressed }) => [
-                styles.iconButton,
-                {
-                  backgroundColor:
-                    colors.card,
-                },
-                pressed && {
-                  opacity: 0.7,
-                },
-              ]}
-            >
-              <Feather
-                name="user"
-                size={19}
-                color={colors.navy}
-              />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Narimane Romantic Surprise */}
-        <RomanticWelcome
-          language={state.language}
-          colors={colors}
-        />
-
-        {/* Work / Vacation */}
-        <View
-          style={[
-            styles.modeSwitch,
-            {
-              backgroundColor:
-                colors.mint,
-            },
-          ]}
-        >
-          <View style={styles.modeCopy}>
-            <Text
-              style={[
-                styles.modeLabel,
-                { color: colors.navy },
-              ]}
-            >
-              {state.mode === 'work'
-                ? t.work
-                : t.vacation}
-            </Text>
-
-            <Text
-              style={[
-                styles.modeSubcopy,
-                {
-                  color:
-                    colors.secondaryForeground,
-                },
-              ]}
-            >
-              {state.mode === 'work'
-                ? t.workSubtitle
-                : t.vacationSubtitle}
-            </Text>
-          </View>
-
-          <View style={styles.modePill}>
             <Feather
               name={
                 state.mode === 'work'
                   ? 'briefcase'
                   : 'sun'
               }
-              size={15}
+              size={17}
               color={colors.navy}
             />
 
             <Text
               style={[
-                styles.modePillText,
+                styles.modeButtonText,
                 { color: colors.navy },
               ]}
             >
@@ -963,11 +490,11 @@ export default function HomeScreen() {
                 ? 'W'
                 : 'V'}
             </Text>
-          </View>
+          </Pressable>
         </View>
 
-        {/* Today */}
-        <View style={styles.sectionHeading}>
+        {/* TODAY */}
+        <View style={styles.sectionHeader}>
           <Text
             style={[
               styles.sectionTitle,
@@ -991,9 +518,8 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Metrics */}
-        <View style={styles.metricRow}>
-          {/* Weight */}
+        {/* METRICS */}
+        <View style={styles.metricsRow}>
           <View
             style={[
               styles.metricCard,
@@ -1042,38 +568,19 @@ export default function HomeScreen() {
               {Number(
                 state.currentWeight
               ).toFixed(1)}{' '}
-              <Text
-                style={styles.metricUnit}
-              >
+              <Text style={styles.unit}>
                 {t.kg}
               </Text>
             </Text>
 
-            <View style={styles.metricFooter}>
-              <Text
-                style={[
-                  styles.metricFooterText,
-                  {
-                    color:
-                      colors.success,
-                  },
-                ]}
-              >
-                {progress}%
-              </Text>
-
-              <Text
-                style={[
-                  styles.metricFooterText,
-                  {
-                    color:
-                      colors.mutedForeground,
-                  },
-                ]}
-              >
-                {t.progress}
-              </Text>
-            </View>
+            <Text
+              style={[
+                styles.metricSmall,
+                { color: colors.success },
+              ]}
+            >
+              {progress}% {t.progress}
+            </Text>
 
             <View
               style={[
@@ -1097,7 +604,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Water metric */}
           <View
             style={[
               styles.metricCard,
@@ -1142,23 +648,21 @@ export default function HomeScreen() {
               ]}
             >
               {todayLog.waterGlasses}
-              <Text
-                style={styles.metricUnit}
-              >
+              <Text style={styles.unit}>
                 /8
               </Text>
             </Text>
 
             <Text
               style={[
-                styles.metricFooterText,
+                styles.metricSmall,
                 {
                   color:
                     colors.mutedForeground,
                 },
               ]}
             >
-              {t.glasses} · {t.goal}
+              {t.glasses}
             </Text>
 
             <View
@@ -1176,15 +680,7 @@ export default function HomeScreen() {
                   {
                     backgroundColor:
                       colors.primary,
-                    width: `${Math.min(
-                      100,
-                      Math.max(
-                        0,
-                        (todayLog.waterGlasses /
-                          8) *
-                          100
-                      )
-                    )}%`,
+                    width: `${waterProgress}%`,
                   },
                 ]}
               />
@@ -1192,7 +688,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Water tracker */}
+        {/* WATER */}
         <View
           style={[
             styles.waterCard,
@@ -1202,11 +698,13 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <View style={styles.waterHeader}>
+          <View
+            style={styles.waterHeader}
+          >
             <View>
               <Text
                 style={[
-                  styles.darkCardEyebrow,
+                  styles.waterEyebrow,
                   {
                     color:
                       colors.mintStrong,
@@ -1218,9 +716,10 @@ export default function HomeScreen() {
 
               <Text
                 style={[
-                  styles.darkCardTitle,
+                  styles.waterTitle,
                   {
-                    color: colors.card,
+                    color:
+                      colors.card,
                   },
                 ]}
               >
@@ -1237,7 +736,9 @@ export default function HomeScreen() {
             />
           </View>
 
-          <View style={styles.glassRow}>
+          <View
+            style={styles.glassRow}
+          >
             {Array.from(
               { length: 8 },
               (_, index) => {
@@ -1248,340 +749,6 @@ export default function HomeScreen() {
                 return (
                   <Pressable
                     key={index}
-                    accessibilityLabel={`${t.water} ${
-                      index + 1
-                    }`}
-                    testID={`water-glass-${
-                      index + 1
-                    }`}
-                    onPress={() => {
-                      Haptics.selectionAsync().ca          ]}
-            >
-              {dayName} · {t.today}
-            </Text>
-          </View>
-
-          <View style={styles.headerActions}>
-            <Pressable
-              accessibilityLabel={t.reminders}
-              testID="home-reminders"
-              onPress={() => undefined}
-              style={({ pressed }) => [
-                styles.iconButton,
-                { backgroundColor: colors.card },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Feather
-                name="bell"
-                size={19}
-                color={colors.navy}
-              />
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel={t.profile}
-              testID="home-profile"
-              onPress={() => undefined}
-              style={({ pressed }) => [
-                styles.iconButton,
-                { backgroundColor: colors.card },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Feather
-                name="user"
-                size={19}
-                color={colors.navy}
-              />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Romantic Narimane surprise */}
-        <RomanticWelcome
-          language={state.language}
-          colors={colors}
-        />
-
-        <View
-          style={[
-            styles.modeSwitch,
-            { backgroundColor: colors.mint },
-          ]}
-        >
-          <View style={styles.modeCopy}>
-            <Text
-              style={[
-                styles.modeLabel,
-                { color: colors.navy },
-              ]}
-            >
-              {state.mode === 'work'
-                ? t.work
-                : t.vacation}
-            </Text>
-
-            <Text
-              style={[
-                styles.modeSubcopy,
-                { color: colors.secondaryForeground },
-              ]}
-            >
-              {state.mode === 'work'
-                ? t.workSubtitle
-                : t.vacationSubtitle}
-            </Text>
-          </View>
-
-          <View style={styles.modePill}>
-            <Feather
-              name={
-                state.mode === 'work'
-                  ? 'briefcase'
-                  : 'sun'
-              }
-              size={15}
-              color={colors.navy}
-            />
-
-            <Text
-              style={[
-                styles.modePillText,
-                { color: colors.navy },
-              ]}
-            >
-              {state.mode === 'work' ? 'W' : 'V'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeading}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: colors.navy },
-            ]}
-          >
-            {t.today}
-          </Text>
-
-          <Text
-            style={[
-              styles.sectionMeta,
-              { color: colors.mutedForeground },
-            ]}
-          >
-            {completedTasks}/{totalTasks} {t.tasks}
-          </Text>
-        </View>
-
-        <View style={styles.metricRow}>
-          <View
-            style={[
-              styles.metricCard,
-              { backgroundColor: colors.card },
-            ]}
-          >
-            <View
-              style={[
-                styles.metricIcon,
-                { backgroundColor: colors.lavender },
-              ]}
-            >
-              <Feather
-                name="activity"
-                size={18}
-                color={colors.lavenderStrong}
-              />
-            </View>
-
-            <Text
-              style={[
-                styles.metricLabel,
-                { color: colors.mutedForeground },
-              ]}
-            >
-              {t.weight}
-            </Text>
-
-            <Text
-              style={[
-                styles.metricValue,
-                { color: colors.navy },
-              ]}
-            >
-              {state.currentWeight.toFixed(1)}{' '}
-              <Text style={styles.metricUnit}>
-                {t.kg}
-              </Text>
-            </Text>
-
-            <View style={styles.metricFooter}>
-              <Text
-                style={[
-                  styles.metricFooterText,
-                  { color: colors.success },
-                ]}
-              >
-                {progress}%
-              </Text>
-
-              <Text
-                style={[
-                  styles.metricFooterText,
-                  { color: colors.mutedForeground },
-                ]}
-              >
-                {t.progress}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.progressTrack,
-                { backgroundColor: colors.muted },
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    backgroundColor:
-                      colors.lavenderStrong,
-                    width: `${Math.min(
-                      100,
-                      progress
-                    )}%`,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.metricCard,
-              { backgroundColor: colors.card },
-            ]}
-          >
-            <View
-              style={[
-                styles.metricIcon,
-                { backgroundColor: colors.mint },
-              ]}
-            >
-              <Feather
-                name="droplet"
-                size={18}
-                color={colors.primary}
-              />
-            </View>
-
-            <Text
-              style={[
-                styles.metricLabel,
-                { color: colors.mutedForeground },
-              ]}
-            >
-              {t.water}
-            </Text>
-
-            <Text
-              style={[
-                styles.metricValue,
-                { color: colors.navy },
-              ]}
-            >
-              {todayLog.waterGlasses}
-              <Text style={styles.metricUnit}>
-                /8
-              </Text>
-            </Text>
-
-            <Text
-              style={[
-                styles.metricFooterText,
-                { color: colors.mutedForeground },
-              ]}
-            >
-              {t.glasses} · {t.goal}
-            </Text>
-
-            <View
-              style={[
-                styles.progressTrack,
-                { backgroundColor: colors.muted },
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    backgroundColor: colors.primary,
-                    width: `${
-                      (todayLog.waterGlasses / 8) *
-                      100
-                    }%`,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-        </View>
-
-        <View
-          style={[
-            styles.waterCard,
-            { backgroundColor: colors.navy },
-          ]}
-        >
-          <View style={styles.waterHeader}>
-            <View>
-              <Text
-                style={[
-                  styles.darkCardEyebrow,
-                  { color: colors.mintStrong },
-                ]}
-              >
-                {t.water}
-              </Text>
-
-              <Text
-                style={[
-                  styles.darkCardTitle,
-                  { color: colors.card },
-                ]}
-              >
-                {todayLog.waterGlasses < 8
-                  ? `${8 - todayLog.waterGlasses} ${t.glasses} ${t.remaining}`
-                  : t.allDone}
-              </Text>
-            </View>
-
-            <Feather
-              name="droplet"
-              size={25}
-              color={colors.mintStrong}
-            />
-          </View>
-
-          <View style={styles.glassRow}>
-            {Array.from(
-              { length: 8 },
-              (_, index) => {
-                const filled =
-                  index < todayLog.waterGlasses;
-
-                return (
-                  <Pressable
-                    key={index}
-                    accessibilityLabel={`${t.water} ${
-                      index + 1
-                    }`}
-                    testID={`water-glass-${
-                      index + 1
-                    }`}
                     onPress={() => {
                       Haptics.selectionAsync();
                       toggleWater(
@@ -1590,20 +757,17 @@ export default function HomeScreen() {
                         state.mode
                       );
                     }}
-                    style={({ pressed }) => [
+                    style={[
                       styles.glass,
                       {
-                        backgroundColor: filled
-                          ? colors.mintStrong
-                          : 'rgba(255,255,255,0.14)',
-                        borderColor: filled
-                          ? colors.mintStrong
-                          : 'rgba(255,255,255,0.26)',
-                      },
-                      pressed && {
-                        transform: [
-                          { scale: 0.9 },
-                        ],
+                        backgroundColor:
+                          filled
+                            ? colors.mintStrong
+                            : 'rgba(255,255,255,0.12)',
+                        borderColor:
+                          filled
+                            ? colors.mintStrong
+                            : 'rgba(255,255,255,0.25)',
                       },
                     ]}
                   >
@@ -1628,408 +792,54 @@ export default function HomeScreen() {
               { color: colors.mint },
             ]}
           >
-            {todayLog.waterGlasses}/8 {t.glasses}
+            {todayLog.waterGlasses}/8{' '}
+            {t.glasses}
           </Text>
         </View>
 
-        <View style={styles.sectionHeading}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: colors.navy },
-                    ]}
-            >
-              {dayName} · {t.today}
-            </Text>
-          </View>
-
-          <View style={styles.headerActions}>
-            <Pressable
-              accessibilityLabel={t.reminders}
-              testID="home-reminders"
-              onPress={() => undefined}
-              style={({ pressed }) => [
-                styles.iconButton,
-                { backgroundColor: colors.card },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Feather
-                name="bell"
-                size={19}
-                color={colors.navy}
-              />
-            </Pressable>
-
-            <Pressable
-              accessibilityLabel={t.profile}
-              testID="home-profile"
-              onPress={() => undefined}
-              style={({ pressed }) => [
-                styles.iconButton,
-                { backgroundColor: colors.card },
-                pressed && { opacity: 0.7 },
-              ]}
-            >
-              <Feather
-                name="user"
-                size={19}
-                color={colors.navy}
-              />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* Romantic Narimane surprise */}
-        <RomanticWelcome
-          language={state.language}
-          colors={colors}
-        />
-
-        <View
-          style={[
-            styles.modeSwitch,
-            { backgroundColor: colors.mint },
-          ]}
-        >
-          <View style={styles.modeCopy}>
-            <Text
-              style={[
-                styles.modeLabel,
-                { color: colors.navy },
-              ]}
-            >
-              {state.mode === 'work'
-                ? t.work
-                : t.vacation}
-            </Text>
-
-            <Text
-              style={[
-                styles.modeSubcopy,
-                { color: colors.secondaryForeground },
-              ]}
-            >
-              {state.mode === 'work'
-                ? t.workSubtitle
-                : t.vacationSubtitle}
-            </Text>
-          </View>
-
-          <View style={styles.modePill}>
-            <Feather
-              name={
-                state.mode === 'work'
-                  ? 'briefcase'
-                  : 'sun'
-              }
-              size={15}
-              color={colors.navy}
-            />
-
-            <Text
-              style={[
-                styles.modePillText,
-                { color: colors.navy },
-              ]}
-            >
-              {state.mode === 'work' ? 'W' : 'V'}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeading}>
+        {/* MEALS */}
+        <View style={styles.sectionHeader}>
           <Text
             style={[
               styles.sectionTitle,
               { color: colors.navy },
             ]}
           >
-            {t.today}
+            {t.meals}
           </Text>
 
           <Text
             style={[
               styles.sectionMeta,
-              { color: colors.mutedForeground },
+              {
+                color:
+                  colors.mutedForeground,
+              },
             ]}
           >
-            {completedTasks}/{totalTasks} {t.tasks}
+            {completedMeals}/
+            {todayPlan.meals.length}
           </Text>
-        </View>
-
-        <View style={styles.metricRow}>
-          <View
-            style={[
-              styles.metricCard,
-              { backgroundColor: colors.card },
-            ]}
-          >
-            <View
-              style={[
-                styles.metricIcon,
-                { backgroundColor: colors.lavender },
-              ]}
-            >
-              <Feather
-                name="activity"
-                size={18}
-                color={colors.lavenderStrong}
-              />
-            </View>
-
-            <Text
-              style={[
-                styles.metricLabel,
-                { color: colors.mutedForeground },
-              ]}
-            >
-              {t.weight}
-            </Text>
-
-            <Text
-              style={[
-                styles.metricValue,
-                { color: colors.navy },
-              ]}
-            >
-              {state.currentWeight.toFixed(1)}{' '}
-              <Text style={styles.metricUnit}>
-                {t.kg}
-              </Text>
-            </Text>
-
-            <View style={styles.metricFooter}>
-              <Text
-                style={[
-                  styles.metricFooterText,
-                  { color: colors.success },
-                ]}
-              >
-                {progress}%
-              </Text>
-
-              <Text
-                style={[
-                  styles.metricFooterText,
-                  { color: colors.mutedForeground },
-                ]}
-              >
-                {t.progress}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.progressTrack,
-                { backgroundColor: colors.muted },
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    backgroundColor:
-                      colors.lavenderStrong,
-                    width: `${Math.min(
-                      100,
-                      progress
-                    )}%`,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-
-          <View
-            style={[
-              styles.metricCard,
-              { backgroundColor: colors.card },
-            ]}
-          >
-            <View
-              style={[
-                styles.metricIcon,
-                { backgroundColor: colors.mint },
-              ]}
-            >
-              <Feather
-                name="droplet"
-                size={18}
-                color={colors.primary}
-              />
-            </View>
-
-            <Text
-              style={[
-                styles.metricLabel,
-                { color: colors.mutedForeground },
-              ]}
-            >
-              {t.water}
-            </Text>
-
-            <Text
-              style={[
-                styles.metricValue,
-                { color: colors.navy },
-              ]}
-            >
-              {todayLog.waterGlasses}
-              <Text style={styles.metricUnit}>
-                /8
-              </Text>
-            </Text>
-
-            <Text
-              style={[
-                styles.metricFooterText,
-                { color: colors.mutedForeground },
-              ]}
-            >
-              {t.glasses} · {t.goal}
-            </Text>
-
-            <View
-              style={[
-                styles.progressTrack,
-                { backgroundColor: colors.muted },
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressFill,
-                  {
-                    backgroundColor: colors.primary,
-                    width: `${
-                      (todayLog.waterGlasses / 8) *
-                      100
-                    }%`,
-                  },
-                ]}
-              />
-            </View>
-          </View>
         </View>
 
         <View
           style={[
-            styles.waterCard,
-            { backgroundColor: colors.navy },
+            styles.listCard,
+            {
+              backgroundColor:
+                colors.card,
+            },
           ]}
         >
-          <View style={styles.waterHeader}>
-            <View>
-              <Text
-                style={[
-                  styles.darkCardEyebrow,
-                  { color: colors.mintStrong },
-                ]}
-              >
-                {t.water}
-              </Text>
+          {todayPlan.meals.map(
+            (meal, index) => {
+              const checked =
+                !!todayLog.meals[meal.id];
 
-              <Text
-                style={[
-                  styles.darkCardTitle,
-                  { color: colors.card },
-                ]}
-              >
-                {todayLog.waterGlasses < 8
-                  ? `${8 - todayLog.waterGlasses} ${t.glasses} ${t.remaining}`
-                  : t.allDone}
-              </Text>
-            </View>
-
-            <Feather
-              name="droplet"
-              size={25}
-              color={colors.mintStrong}
-            />
-          </View>
-
-          <View style={styles.glassRow}>
-            {Array.from(
-              { length: 8 },
-              (_, index) => {
-                const filled =
-                  index < todayLog.waterGlasses;
-
-                return (
-                  <Pressable
-                    key={index}
-                    accessibilityLabel={`${t.water} ${
-                      index + 1
-                    }`}
-                    testID={`water-glass-${
-                      index + 1
-                    }`}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      toggleWater(
-                        index,
-                        todayDay,
-                        state.mode
-                      );
-                    }}
-                    style={({ pressed }) => [
-                      styles.glass,
-                      {
-                        backgroundColor: filled
-                          ? colors.mintStrong
-                          : 'rgba(255,255,255,0.14)',
-                        borderColor: filled
-                          ? colors.mintStrong
-                          : 'rgba(255,255,255,0.26)',
-                      },
-                      pressed && {
-                        transform: [
-                          { scale: 0.9 },
-                        ],
-                      },
-                    ]}
-                  >
-                    <Feather
-                      name="droplet"
-                      size={14}
-                      color={
-                        filled
-                          ? colors.navy
-                          : colors.card
-                      }
-                    />
-                  </Pressable>
-                );
-              }
-            )}
-          </View>
-
-          <Text
-            style={[
-              styles.waterHint,
-              { color: colors.mint },
-            ]}
-          >
-            {todayLog.waterGlasses}/8 {t.glasses}
-          </Text>
-        </View>
-
-        <View style={styles.sectionHeading}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              { color: colors.navy },
-           />}</View></Pressable>)}
-
-        <View style={styles.sectionHeading}><Text style={[styles.sectionTitle, { color: colors.navy }]}>{t.todaySchedule}</Text><Text style={[styles.sectionMeta, { color: colors.mutedForeground }]}>{completedSchedule}/{schedule.length} {t.completed}</Text></View>
-        <View style={[styles.scheduleCard, { backgroundColor: colors.card }]}>{schedule.map((item, index) => <Pressable key={item.id} testID={`home-schedule-${item.id}`} onPress={() => { Haptics.selectionAsync(); toggleSchedule(item.id, todayDay, state.mode); }} style={({ pressed }) => [styles.scheduleRow, index > 0 && { borderTopWidth: 1, borderTopColor: colors.border }, pressed && { opacity: 0.7 }]}><View style={[styles.scheduleDot, { backgroundColor: todayLog.schedule[item.id] ? colors.primary : item.kind === 'meal' ? colors.coral : item.kind === 'movement' ? colors.lavenderStrong : colors.amber }]} /><Text style={[styles.scheduleTime, { color: colors.navy }]}>{item.time}</Text><Text style={[styles.scheduleTitle, { color: colors.navy }, todayLog.schedule[item.id] && styles.completedText]}>{item.title}</Text><View style={[styles.check, { backgroundColor: todayLog.schedule[item.id] ? colors.primary : colors.background, borderColor: todayLog.schedule[item.id] ? colors.primary : colors.border }]}>{todayLog.schedule[item.id] && <Feather name="check" size={13} color={colors.card} />}</View></Pressable>)}</View>
-
-        <View style={[styles.adviceCard, { backgroundColor: colors.lavender }]}><View style={[styles.adviceIcon, { backgroundColor: colors.card }]}><Feather name="compass" size={18} color={colors.lavenderStrong} /></View><View style={styles.adviceCopy}><Text style={[styles.adviceEyebrow, { color: colors.lavenderStrong }]}>{t.advice}</Text><Text style={[styles.adviceText, { color: colors.navy }]}>{advice}</Text></View></View>
-      </ScrollView>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  screen: { flex: 1 }, content: { paddingHorizontal: 20, paddingTop: 18 }, header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 19 }, eyebrow: { fontSize: 12, fontWeight: '600', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 5 }, greeting: { fontSize: 27, fontWeight: '700', letterSpacing: -0.7 }, dayLabel: { fontSize: 12, fontWeight: '700', marginTop: 6 }, headerActions: { flexDirection: 'row', gap: 9 }, iconButton: { width: 41, height: 41, borderRadius: 14, alignItems: 'center', justifyContent: 'center', shadowColor: '#17343B', shadowOpacity: 0.05, shadowRadius: 8, elevation: 1 }, modeSwitch: { minHeight: 76, borderRadius: 22, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 25 }, modeCopy: { flex: 1 }, modeLabel: { fontSize: 15, fontWeight: '700', marginBottom: 4 }, modeSubcopy: { fontSize: 12, lineHeight: 17 }, modePill: { width: 45, height: 45, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.64)', alignItems: 'center', justifyContent: 'center', gap: 2 }, modePillText: { fontSize: 10, fontWeight: '800' }, sectionHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 11, marginTop: 2 }, sectionTitle: { fontSize: 18, fontWeight: '700', letterSpacing: -0.3 }, sectionMeta: { fontSize: 11 }, metricRow: { flexDirection: 'row', gap: 12, marginBottom: 14 }, metricCard: { flex: 1, borderRadius: 21, padding: 15, minHeight: 148, shadowColor: '#17343B', shadowOpacity: 0.04, shadowRadius: 10, elevation: 1 }, metricIcon: { width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }, metricLabel: { fontSize: 12, fontWeight: '500', marginBottom: 4 }, metricValue: { fontSize: 27, fontWeight: '700', letterSpacing: -0.7, marginBottom: 8 }, metricUnit: { fontSize: 13, fontWeight: '600' }, metricFooter: { flexDirection: 'row', gap: 4, alignItems: 'center', marginBottom: 8 }, metricFooterText: { fontSize: 10, fontWeight: '600' }, progressTrack: { height: 6, borderRadius: 4, overflow: 'hidden' }, progressFill: { height: '100%', borderRadius: 4 }, waterCard: { borderRadius: 23, padding: 18, marginBottom: 24 }, waterHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }, darkCardEyebrow: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.1, fontWeight: '700', marginBottom: 5 }, darkCardTitle: { fontSize: 17, lineHeight: 23, fontWeight: '700', maxWidth: 245 }, glassRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 13 }, glass: { width: 28, height: 37, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }, waterHint: { fontSize: 11, fontWeight: '600' }, link: { fontSize: 12, fontWeight: '700' }, mealList: { borderRadius: 21, paddingHorizontal: 15, marginBottom: 19 }, mealRow: { minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: 11 }, check: { width: 25, height: 25, borderRadius: 9, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' }, mealCopy: { flex: 1 }, mealLabel: { fontSize: 13, fontWeight: '700', marginBottom: 3 }, completedText: { textDecorationLine: 'line-through', opacity: 0.55 }, mealDetail: { fontSize: 10, lineHeight: 15 }, mealTime: { fontSize: 11, fontWeight: '600' }, mealCount: { fontSize: 10, paddingBottom: 13, paddingTop: 2, textAlign: 'right' }, exerciseCard: { minHeight: 74, borderRadius: 19, padding: 12, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }, exerciseIcon: { width: 44, height: 44, borderRadius: 15, alignItems: 'center', justifyContent: 'center' }, exerciseCopy: { flex: 1 }, exerciseTitle: { fontSize: 13, fontWeight: '700', marginBottom: 4 }, exerciseMeta: { fontSize: 11 }, exerciseAction: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' }, scheduleCard: { borderRadius: 21, paddingHorizontal: 15, marginBottom: 19 }, scheduleRow: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 9 }, scheduleDot: { width: 8, height: 8, borderRadius: 4 }, scheduleTime: { width: 43, fontSize: 11, fontWeight: '700' }, scheduleTitle: { flex: 1, fontSize: 12, fontWeight: '600' }, adviceCard: { borderRadius: 21, padding: 16, flexDirection: 'row', gap: 12, alignItems: 'center' }, adviceIcon: { width: 36, height: 36, borderRadius: 13, alignItems: 'center', justifyContent: 'center' }, adviceCopy: { flex: 1 }, adviceEyebrow: { fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 }, adviceText: { fontSize: 13, lineHeight: 19, fontWeight: '500' },
-});
+              return (
+                <Pressable
+                  key={meal.id}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    toggleMeal(
+ 
