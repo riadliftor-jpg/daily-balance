@@ -17,35 +17,35 @@ import { useColors } from '@/hooks/useColors';
 import { getDayNames, useCopy } from '@/lib/i18n';
 import { getWeeklyPlan } from '@/lib/weeklyPlan';
 
-type Language = 'ar' | 'fr' | 'en';
+type Language = 'en' | 'fr' | 'ar';
 
 const romanticMessages: Record<Language, string[]> = {
-  ar: [
-    'Narimane ❤️ وجودك يجعل يومي أجمل.',
-    'لغز اليوم: شيء لا يُرى، لكن القلب يشعر به… ما هو؟ ❤️',
-    'Narimane، لو كان للحب عنوان، لاخترت عنوانك أنتِ. 🌹',
-    'رسالة سرية لكِ: أنتِ أجمل مفاجأة في أيامي. 💌',
-    'اقتربي قليلًا… لدي شيء صغير أريد أن أهمسه لقلبك. 😉❤️',
-    'هناك شخص واحد يجعل الابتسامة تأتي بلا سبب… أنتِ تعرفين من تكونين. ❤️',
-    'لو كان بإمكاني إرسال حضن عبر الشاشة، لوصل إليك الآن. 🤍',
+  en: [
+    'Narimane ❤️ you make my days brighter just by being there.',
+    'Today’s little riddle: you cannot see it, but your heart can feel it. What is it? ❤️',
+    'Narimane, if love had an address, I would choose yours. 🌹',
+    'Secret message: you are my favorite surprise. 💌',
+    'Come a little closer… I have a tiny secret for your heart. 😉❤️',
+    'Some people make you smile for no reason. You are one of them. ❤️',
+    'If I could send a hug through the screen, it would already be with you. 🤍',
   ],
   fr: [
     'Narimane ❤️ ta présence rend mes journées plus belles.',
-    'Petite énigme : on ne peut pas le voir, mais le cœur le ressent… qu’est-ce que c’est ? ❤️',
+    'Petite énigme : on ne peut pas le voir, mais le cœur le ressent. Qu’est-ce que c’est ? ❤️',
     'Narimane, si l’amour avait une adresse, je choisirais la tienne. 🌹',
     'Message secret : tu es ma plus jolie surprise. 💌',
-    'Approche-toi… j’ai un petit secret à murmurer à ton cœur. 😉❤️',
-    'Il y a une personne qui fait sourire sans raison… tu sais qui tu es. ❤️',
-    'Si je pouvais envoyer un câlin à travers l’écran, il serait déjà chez toi. 🤍',
+    'Approche-toi… j’ai un petit secret pour ton cœur. 😉❤️',
+    'Certaines personnes font sourire sans raison. Tu en fais partie. ❤️',
+    'Si je pouvais envoyer un câlin à travers l’écran, il serait déjà avec toi. 🤍',
   ],
-  en: [
-    'Narimane ❤️ you make my days brighter just by being there.',
-    'Today’s riddle: you cannot see it, but your heart can feel it… what is it? ❤️',
-    'Narimane, if love had an address, I would choose yours. 🌹',
-    'Secret message: you are my favorite surprise. 💌',
-    'Come a little closer… I have a tiny secret to whisper to your heart. 😉❤️',
-    'There is someone who makes me smile for no reason… you know who you are. ❤️',
-    'If I could send a hug through the screen, it would already be with you. 🤍',
+  ar: [
+    'Narimane ❤️ وجودك يجعل أيامي أجمل.',
+    'لغز اليوم: شيء لا يُرى، لكن القلب يشعر به. ما هو؟ ❤️',
+    'Narimane، لو كان للحب عنوان لاخترت عنوانك أنتِ. 🌹',
+    'رسالة سرية: أنتِ أجمل مفاجأة في أيامي. 💌',
+    'اقتربي قليلًا… لدي سر صغير لقلبك. 😉❤️',
+    'هناك أشخاص يجعلوننا نبتسم بلا سبب. أنتِ واحدة منهم. ❤️',
+    'لو كان بإمكاني إرسال حضن عبر الشاشة، لوصل إليك الآن. 🤍',
   ],
 };
 
@@ -57,13 +57,11 @@ function RomanticWelcome({
   colors: any;
 }) {
   const day = new Date().getDate();
-  const message = romanticMessages[language][
-    day % romanticMessages[language].length
-  ];
+  const messages = romanticMessages[language];
+  const message = messages[day % messages.length];
 
   const [opened, setOpened] = useState(false);
-
-  const scale = useRef(new Animated.Value(0.5)).current;
+  const scale = useRef(new Animated.Value(0.7)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
 
@@ -79,20 +77,20 @@ function RomanticWelcome({
     Animated.parallel([
       Animated.spring(scale, {
         toValue: 1,
-        friction: 5,
+        friction: 6,
         tension: 70,
         useNativeDriver: true,
       }),
       Animated.timing(opacity, {
         toValue: 1,
-        duration: 500,
+        duration: 450,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
       Animated.sequence([
         Animated.timing(heartScale, {
-          toValue: 1.35,
-          duration: 180,
+          toValue: 1.3,
+          duration: 160,
           useNativeDriver: true,
         }),
         Animated.spring(heartScale, {
@@ -104,14 +102,14 @@ function RomanticWelcome({
     ]).start();
   };
 
-  const surpriseText =
+  const surprise =
     language === 'ar'
       ? 'لديكِ مفاجأة صغيرة ❤️'
       : language === 'fr'
         ? 'Tu as une petite surprise ❤️'
         : 'You have a little surprise ❤️';
 
-  const tapText =
+  const tap =
     language === 'ar'
       ? 'اضغطي لاكتشافها'
       : language === 'fr'
@@ -131,25 +129,20 @@ function RomanticWelcome({
     >
       <Animated.View
         style={[
-          styles.romanticHeartCircle,
+          styles.romanticHeart,
           { transform: [{ scale: heartScale }] },
         ]}
       >
-        <Text style={styles.romanticHeart}>♥</Text>
+        <Text style={styles.heartText}>♥</Text>
       </Animated.View>
 
-      <View style={styles.romanticContent}>
+      <View style={styles.romanticBody}>
         <Text style={styles.romanticName}>Narimane</Text>
 
         {!opened ? (
           <>
-            <Text style={styles.romanticHint}>
-              {surpriseText}
-            </Text>
-
-            <Text style={styles.romanticTap}>
-              {tapText}
-            </Text>
+            <Text style={styles.romanticHint}>{surprise}</Text>
+            <Text style={styles.romanticTap}>{tap}</Text>
           </>
         ) : (
           <Animated.View
@@ -173,25 +166,23 @@ function RomanticWelcome({
         )}
       </View>
 
-      <View style={styles.romanticGift}>
-        <Feather
-          name={opened ? 'heart' : 'gift'}
-          size={22}
-          color="#FFFFFF"
-        />
-      </View>
+      <Feather
+        name={opened ? 'heart' : 'gift'}
+        size={22}
+        color="#FFFFFF"
+      />
     </Pressable>
   );
 }
 
 function CheckButton({
   checked,
-  onPress,
   colors,
+  onPress,
 }: {
   checked: boolean;
-  onPress: () => void;
   colors: any;
+  onPress: () => void;
 }) {
   return (
     <Pressable
@@ -209,13 +200,13 @@ function CheckButton({
         },
       ]}
     >
-      {checked && (
+      {checked ? (
         <Feather
           name="check"
           size={14}
           color="#FFFFFF"
         />
-      )}
+      ) : null}
     </Pressable>
   );
 }
@@ -238,46 +229,44 @@ export default function HomeScreen() {
 
   const t = useCopy(state.language);
 
-  const todayPlan = getWeeklyPlan(
+  const plan = getWeeklyPlan(
     state.language,
     todayDay
   );
 
-  const todayLog = getLog(
+  const log = getLog(
     todayDay,
     state.mode
   );
 
   const schedule =
     state.mode === 'work'
-      ? todayPlan.workSchedule
-      : todayPlan.vacationSchedule;
+      ? plan.workSchedule
+      : plan.vacationSchedule;
 
-  const completedMeals =
-    todayPlan.meals.filter(
-      (meal) => todayLog.meals[meal.id]
-    ).length;
+  const mealsDone = plan.meals.filter(
+    (meal) => !!log.meals[meal.id]
+  ).length;
 
-  const completedExercises =
-    todayPlan.exercises.filter(
+  const exercisesDone =
+    plan.exercises.filter(
       (exercise) =>
-        todayLog.exercises[exercise.id]
+        !!log.exercises[exercise.id]
     ).length;
 
-  const completedSchedule =
+  const scheduleDone =
     schedule.filter(
-      (item) =>
-        todayLog.schedule[item.id]
+      (item) => !!log.schedule[item.id]
     ).length;
 
-  const completedTasks =
-    completedMeals +
-    completedExercises +
-    completedSchedule;
+  const tasksDone =
+    mealsDone +
+    exercisesDone +
+    scheduleDone;
 
-  const totalTasks =
-    todayPlan.meals.length +
-    todayPlan.exercises.length +
+  const tasksTotal =
+    plan.meals.length +
+    plan.exercises.length +
     schedule.length;
 
   const progress = useMemo(() => {
@@ -295,28 +284,35 @@ export default function HomeScreen() {
       return 100;
     }
 
-    const startWeight = 73.5;
+    const first =
+      state.weightHistory.length > 0
+        ? Number(state.weightHistory[0].value)
+        : current;
 
-    if (startWeight <= target) {
+    if (
+      !Number.isFinite(first) ||
+      first <= target
+    ) {
       return 0;
     }
 
-    const value =
-      ((startWeight - current) /
-        (startWeight - target)) *
+    const result =
+      ((first - current) /
+        (first - target)) *
       100;
 
     return Math.round(
-      Math.min(100, Math.max(0, value))
+      Math.max(0, Math.min(100, result))
     );
   }, [
     state.currentWeight,
     state.targetWeight,
+    state.weightHistory,
   ]);
 
   const waterProgress = Math.min(
     100,
-    (todayLog.waterGlasses / 8) * 100
+    (log.waterGlasses / 8) * 100
   );
 
   const displayName =
@@ -328,23 +324,23 @@ export default function HomeScreen() {
   const dayName =
     getDayNames(state.language)[todayDay];
 
-  const dateLabel = useMemo(() => {
-    return new Intl.DateTimeFormat(
-      state.language === 'ar'
-        ? 'ar'
-        : state.language,
-      {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      }
-    ).format(new Date());
-  }, [state.language]);
+  const dateLabel = useMemo(
+    () =>
+      new Intl.DateTimeFormat(
+        state.language,
+        {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }
+      ).format(new Date()),
+    [state.language]
+  );
 
   return (
     <View
       style={[
-        styles.screen,
+        styles.container,
         {
           backgroundColor:
             colors.background,
@@ -354,14 +350,14 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: insets.top + 18,
+          paddingTop: insets.top + 16,
           paddingHorizontal: 20,
           paddingBottom: insets.bottom + 110,
         }}
       >
         {/* HEADER */}
         <View style={styles.header}>
-          <View style={{ flex: 1 }}>
+          <View style={styles.headerText}>
             <Text
               style={[
                 styles.date,
@@ -377,7 +373,9 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.greeting,
-                { color: colors.navy },
+                {
+                  color: colors.navy,
+                },
               ]}
             >
               {t.greeting}, {displayName}
@@ -385,8 +383,10 @@ export default function HomeScreen() {
 
             <Text
               style={[
-                styles.dayLabel,
-                { color: colors.primary },
+                styles.day,
+                {
+                  color: colors.primary,
+                },
               ]}
             >
               {dayName} · {t.today}
@@ -395,7 +395,7 @@ export default function HomeScreen() {
 
           <View
             style={[
-              styles.headerHeart,
+              styles.headerIcon,
               {
                 backgroundColor:
                   colors.card,
@@ -410,13 +410,13 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ROMANTIC NARIMANE MESSAGE */}
+        {/* ROMANTIC MESSAGE */}
         <RomanticWelcome
           language={state.language}
           colors={colors}
         />
 
-        {/* WORK / VACATION */}
+        {/* MODE */}
         <View
           style={[
             styles.modeCard,
@@ -426,11 +426,13 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <View style={{ flex: 1 }}>
+          <View style={styles.modeText}>
             <Text
               style={[
                 styles.modeTitle,
-                { color: colors.navy },
+                {
+                  color: colors.navy,
+                },
               ]}
             >
               {state.mode === 'work'
@@ -455,7 +457,9 @@ export default function HomeScreen() {
 
           <Pressable
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selectionAsync().catch(
+                () => undefined
+              );
               setMode(
                 state.mode === 'work'
                   ? 'vacation'
@@ -476,20 +480,9 @@ export default function HomeScreen() {
                   ? 'briefcase'
                   : 'sun'
               }
-              size={17}
+              size={18}
               color={colors.navy}
             />
-
-            <Text
-              style={[
-                styles.modeButtonText,
-                { color: colors.navy },
-              ]}
-            >
-              {state.mode === 'work'
-                ? 'W'
-                : 'V'}
-            </Text>
           </Pressable>
         </View>
 
@@ -498,7 +491,9 @@ export default function HomeScreen() {
           <Text
             style={[
               styles.sectionTitle,
-              { color: colors.navy },
+              {
+                color: colors.navy,
+              },
             ]}
           >
             {t.today}
@@ -513,16 +508,15 @@ export default function HomeScreen() {
               },
             ]}
           >
-            {completedTasks}/{totalTasks}{' '}
-            {t.tasks}
+            {tasksDone}/{tasksTotal} {t.tasks}
           </Text>
         </View>
 
         {/* METRICS */}
-        <View style={styles.metricsRow}>
+        <View style={styles.metrics}>
           <View
             style={[
-              styles.metricCard,
+              styles.metric,
               {
                 backgroundColor:
                   colors.card,
@@ -562,7 +556,9 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.metricValue,
-                { color: colors.navy },
+                {
+                  color: colors.navy,
+                },
               ]}
             >
               {Number(
@@ -576,7 +572,9 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.metricSmall,
-                { color: colors.success },
+                {
+                  color: colors.success,
+                },
               ]}
             >
               {progress}% {t.progress}
@@ -584,7 +582,7 @@ export default function HomeScreen() {
 
             <View
               style={[
-                styles.progressTrack,
+                styles.track,
                 {
                   backgroundColor:
                     colors.muted,
@@ -593,7 +591,7 @@ export default function HomeScreen() {
             >
               <View
                 style={[
-                  styles.progressFill,
+                  styles.fill,
                   {
                     backgroundColor:
                       colors.lavenderStrong,
@@ -606,7 +604,7 @@ export default function HomeScreen() {
 
           <View
             style={[
-              styles.metricCard,
+              styles.metric,
               {
                 backgroundColor:
                   colors.card,
@@ -644,10 +642,12 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.metricValue,
-                { color: colors.navy },
+                {
+                  color: colors.navy,
+                },
               ]}
             >
-              {todayLog.waterGlasses}
+              {log.waterGlasses}
               <Text style={styles.unit}>
                 /8
               </Text>
@@ -667,7 +667,7 @@ export default function HomeScreen() {
 
             <View
               style={[
-                styles.progressTrack,
+                styles.track,
                 {
                   backgroundColor:
                     colors.muted,
@@ -676,7 +676,7 @@ export default function HomeScreen() {
             >
               <View
                 style={[
-                  styles.progressFill,
+                  styles.fill,
                   {
                     backgroundColor:
                       colors.primary,
@@ -698,13 +698,11 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <View
-            style={styles.waterHeader}
-          >
+          <View style={styles.waterTop}>
             <View>
               <Text
                 style={[
-                  styles.waterEyebrow,
+                  styles.waterLabel,
                   {
                     color:
                       colors.mintStrong,
@@ -718,14 +716,13 @@ export default function HomeScreen() {
                 style={[
                   styles.waterTitle,
                   {
-                    color:
-                      colors.card,
+                    color: colors.card,
                   },
                 ]}
               >
-                {todayLog.waterGlasses < 8
-                  ? `${8 - todayLog.waterGlasses} ${t.glasses} ${t.remaining}`
-                  : t.allDone}
+                {log.waterGlasses >= 8
+                  ? t.allDone
+                  : `${8 - log.waterGlasses} ${t.glasses} ${t.remaining}`}
               </Text>
             </View>
 
@@ -736,21 +733,20 @@ export default function HomeScreen() {
             />
           </View>
 
-          <View
-            style={styles.glassRow}
-          >
+          <View style={styles.glasses}>
             {Array.from(
               { length: 8 },
               (_, index) => {
                 const filled =
-                  index <
-                  todayLog.waterGlasses;
+                  index < log.waterGlasses;
 
                 return (
                   <Pressable
                     key={index}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selectionAsync().catch(
+                        () => undefined
+                      );
                       toggleWater(
                         index,
                         todayDay,
@@ -763,7 +759,7 @@ export default function HomeScreen() {
                         backgroundColor:
                           filled
                             ? colors.mintStrong
-                            : 'rgba(255,255,255,0.12)',
+                            : 'rgba(255,255,255,0.10)',
                         borderColor:
                           filled
                             ? colors.mintStrong
@@ -773,7 +769,7 @@ export default function HomeScreen() {
                   >
                     <Feather
                       name="droplet"
-                      size={14}
+                      size={13}
                       color={
                         filled
                           ? colors.navy
@@ -788,12 +784,13 @@ export default function HomeScreen() {
 
           <Text
             style={[
-              styles.waterHint,
-              { color: colors.mint },
+              styles.waterCount,
+              {
+                color: colors.mint,
+              },
             ]}
           >
-            {todayLog.waterGlasses}/8{' '}
-            {t.glasses}
+            {log.waterGlasses}/8 {t.glasses}
           </Text>
         </View>
 
@@ -802,7 +799,9 @@ export default function HomeScreen() {
           <Text
             style={[
               styles.sectionTitle,
-              { color: colors.navy },
+              {
+                color: colors.navy,
+              },
             ]}
           >
             {t.meals}
@@ -817,8 +816,7 @@ export default function HomeScreen() {
               },
             ]}
           >
-            {completedMeals}/
-            {todayPlan.meals.length}
+            {mealsDone}/{plan.meals.length}
           </Text>
         </View>
 
@@ -831,15 +829,23 @@ export default function HomeScreen() {
             },
           ]}
         >
-          {todayPlan.meals.map(
+          {plan.meals.map(
             (meal, index) => {
               const checked =
-                !!todayLog.meals[meal.id];
+                !!log.meals[meal.id];
 
               return (
                 <Pressable
                   key={meal.id}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selectionAsync().catch(
+                      () => undefined
+                    );
                     toggleMeal(
- 
+                      meal.id,
+                      todayDay,
+                      state.mode
+                    );
+                  }}
+                  style={[
+                    styles.listR
