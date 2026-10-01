@@ -14,266 +14,189 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDailyBalance } from '@/context/DailyBalanceContext';
 import { useColors } from '@/hooks/useColors';
-import { getDayNames, useCopy } from '@/lib/i18n';
+import { useCopy, getDayNames } from '@/lib/i18n';
 import { getWeeklyPlan } from '@/lib/weeklyPlan';
 
-type Language = 'en' | 'fr' | 'ar';
-
-const romanticMessages: Record<Language, string[]> = {
-  en: [
-    'Narimane ❤️ you make my days brighter just by being there.',
-    'Today’s little riddle: you cannot see it, but your heart can feel it. What is it? ❤️',
-    'Narimane, if love had an address, I would choose yours. 🌹',
-    'Secret message: you are my favorite surprise. 💌',
-    'Come a little closer… I have a tiny secret for your heart. 😉❤️',
-    'Some people make you smile for no reason. You are one of them. ❤️',
-    'If I could send a hug through the screen, it would already be with you. 🤍',
+const romanticMessages = {
+  ar: [
+    'ناريمان ❤️ وجودك يجعل كل يوم أجمل.',
+    'رسالة سرية لكِ: أنتِ أجمل جزء في يومي.',
+    'لغز اليوم: من هي التي تجعل قلبي يبتسم دون أن تتكلم؟ ناريمان طبعًا ❤️',
+    'اقتربي قليلًا... لدي رسالة لا أريد أن يسمعها أحد غيرك 😉❤️',
+    'بعض الناس يدخلون حياتنا صدفة، وأنتِ دخلتِ قلبي وبقيتِ فيه.',
   ],
   fr: [
-    'Narimane ❤️ ta présence rend mes journées plus belles.',
-    'Petite énigme : on ne peut pas le voir, mais le cœur le ressent. Qu’est-ce que c’est ? ❤️',
-    'Narimane, si l’amour avait une adresse, je choisirais la tienne. 🌹',
-    'Message secret : tu es ma plus jolie surprise. 💌',
-    'Approche-toi… j’ai un petit secret pour ton cœur. 😉❤️',
-    'Certaines personnes font sourire sans raison. Tu en fais partie. ❤️',
-    'Si je pouvais envoyer un câlin à travers l’écran, il serait déjà avec toi. 🤍',
+    'Narimane ❤️ ta présence rend chaque journée plus belle.',
+    'Message secret pour toi : tu es la plus belle partie de ma journée.',
+    'Petite énigme : qui fait sourire mon cœur sans dire un mot ? Narimane ❤️',
+    'Approche un peu... j’ai un petit message que personne d’autre ne doit entendre 😉❤️',
+    'Certaines personnes entrent dans notre vie par hasard. Toi, tu es entrée dans mon cœur.',
   ],
-  ar: [
-    'Narimane ❤️ وجودك يجعل أيامي أجمل.',
-    'لغز اليوم: شيء لا يُرى، لكن القلب يشعر به. ما هو؟ ❤️',
-    'Narimane، لو كان للحب عنوان لاخترت عنوانك أنتِ. 🌹',
-    'رسالة سرية: أنتِ أجمل مفاجأة في أيامي. 💌',
-    'اقتربي قليلًا… لدي سر صغير لقلبك. 😉❤️',
-    'هناك أشخاص يجعلوننا نبتسم بلا سبب. أنتِ واحدة منهم. ❤️',
-    'لو كان بإمكاني إرسال حضن عبر الشاشة، لوصل إليك الآن. 🤍',
+  en: [
+    'Narimane ❤️ your presence makes every day more beautiful.',
+    'A secret message for you: you are the best part of my day.',
+    'Today’s riddle: who makes my heart smile without saying a word? Narimane ❤️',
+    'Come a little closer... I have a message only you should hear 😉❤️',
+    'Some people enter our lives by chance. You entered my heart and stayed there.',
   ],
 };
+
+const romanticColors = [
+  '#EE9275',
+  '#8E77B7',
+  '#D95C5C',
+  '#0D817A',
+  '#F7C98B',
+];
+
+function getRomanticMessage(language: 'ar' | 'fr' | 'en') {
+  const messages = romanticMessages[language];
+  const day = new Date().getDate();
+  return messages[day % messages.length];
+}
 
 function RomanticWelcome({
   language,
 }: {
-  language: Language;
+  language: 'ar' | 'fr' | 'en';
 }) {
-  const messages = romanticMessages[language];
-  const day = new Date().getDate();
-  const message = messages[day % messages.length];
+  const [revealed, setRevealed] = useState(false);
+  const scale = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(1)).current;
 
-  const [opened, setOpened] = useState(false);
+  const message = useMemo(
+    () => getRomanticMessage(language),
+    [language]
+  );
 
-  const scale = useRef(
-    new Animated.Value(0.72)
-  ).current;
+  const color =
+    romanticColors[new Date().getDate() % romanticColors.length];
 
-  const opacity = useRef(
-    new Animated.Value(0)
-  ).current;
+  const handleReveal = async () => {
+    await Haptics.selectionAsync();
 
-  const heartScale = useRef(
-    new Animated.Value(1)
-  ).current;
-
-  const openMessage = () => {
-    if (opened) {
-      return;
-    }
-
-    setOpened(true);
-
-    Haptics.notificationAsync(
-      Haptics.NotificationFeedbackType.Success
-    ).catch(() => undefined);
-
-    Animated.parallel([
-      Animated.spring(scale, {
-        toValue: 1,
-        friction: 6,
-        tension: 70,
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: 450,
+    Animated.sequence([
+      Animated.timing(scale, {
+        toValue: 1.18,
+        duration: 180,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-
-      Animated.sequence([
-        Animated.timing(heartScale, {
-          toValue: 1.3,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-
-        Animated.spring(heartScale, {
-          toValue: 1,
-          friction: 4,
-          useNativeDriver: true,
-        }),
-      ]),
+      Animated.timing(scale, {
+        toValue: 0.92,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 160,
+        useNativeDriver: true,
+      }),
     ]).start();
+
+    Animated.timing(opacity, {
+      toValue: 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start(() => {
+      setRevealed(true);
+
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 260,
+        useNativeDriver: true,
+      }).start();
+    });
   };
 
-  const surprise =
-    language === 'ar'
-      ? 'لديكِ مفاجأة صغيرة ❤️'
-      : language === 'fr'
-        ? 'Tu as une petite surprise ❤️'
-        : 'You have a little surprise ❤️';
-
-  const tap =
-    language === 'ar'
-      ? 'اضغطي لاكتشافها'
-      : language === 'fr'
-        ? 'Appuie pour la découvrir'
-        : 'Tap to discover it';
-
   return (
-    <Pressable
-      onPress={openMessage}
-      style={({ pressed }) => [
-        styles.romanticCard,
-        {
-          opacity: pressed ? 0.94 : 1,
-        },
-      ]}
-    >
+    <View style={styles.romanticContainer}>
       <Animated.View
         style={[
-          styles.romanticHeart,
+          styles.romanticCard,
           {
-            transform: [
-              {
-                scale: heartScale,
-              },
-            ],
+            transform: [{ scale }],
+            opacity,
+            borderColor: color,
           },
         ]}
       >
-        <Text style={styles.heartText}>♥</Text>
-      </Animated.View>
-
-      <View style={styles.romanticBody}>
-        <Text style={styles.romanticName}>
-          Narimane
-        </Text>
-
-        {!opened ? (
-          <>
-            <Text style={styles.romanticHint}>
-              {surprise}
-            </Text>
-
-            <Text style={styles.romanticTap}>
-              {tap}
-            </Text>
-          </>
-        ) : (
-          <Animated.View
-            style={{
-              opacity,
-              transform: [
-                {
-                  scale,
-                },
-              ],
-            }}
+        {!revealed ? (
+          <Pressable
+            onPress={handleReveal}
+            style={styles.romanticReveal}
           >
+            <View
+              style={[
+                styles.heartCircle,
+                { backgroundColor: color },
+              ]}
+            >
+              <Feather name="heart" size={28} color="#FFFFFF" />
+            </View>
+
+            <Text style={styles.romanticTitle}>
+              Narimane ❤️
+            </Text>
+
+            <Text style={styles.romanticHint}>
+              {language === 'ar'
+                ? 'اضغطي هنا لتكتشفي مفاجأة اليوم'
+                : language === 'fr'
+                  ? 'Appuie ici pour découvrir la surprise du jour'
+                  : 'Tap here to discover today’s surprise'}
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={styles.romanticMessage}>
+            <Text style={styles.romanticTitle}>
+              Narimane ❤️
+            </Text>
+
             <Text
               style={[
-                styles.romanticMessage,
-                {
-                  textAlign:
-                    language === 'ar'
-                      ? 'right'
-                      : 'left',
-                },
+                styles.romanticText,
+                language === 'ar' && styles.rtlText,
               ]}
             >
               {message}
             </Text>
-          </Animated.View>
-        )}
-      </View>
 
-      <Feather
-        name={opened ? 'heart' : 'gift'}
-        size={22}
-        color="#FFFFFF"
-      />
-    </Pressable>
+            <Text style={styles.romanticSmall}>
+              {language === 'ar'
+                ? 'رسالة اليوم ✨'
+                : language === 'fr'
+                  ? 'Message du jour ✨'
+                  : 'Today’s message ✨'}
+            </Text>
+          </View>
+        )}
+      </Animated.View>
+    </View>
   );
 }
 
 function CheckButton({
   checked,
-  colors,
   onPress,
 }: {
   checked: boolean;
-  colors: any;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      hitSlop={8}
       style={[
         styles.checkButton,
-        {
-          backgroundColor: checked
-            ? colors.primary
-            : colors.background,
-          borderColor: checked
-            ? colors.primary
-            : colors.border,
-        },
+        checked && styles.checkButtonDone,
       ]}
     >
-      {checked ? (
-        <Feather
-          name="check"
-          size={14}
-          color="#FFFFFF"
-        />
-      ) : null}
-    </Pressable>
-  );
-}
-
-function ProgressBar({
-  value,
-  color,
-  backgroundColor,
-}: {
-  value: number;
-  color: string;
-  backgroundColor: string;
-}) {
-  const safeValue = Math.max(
-    0,
-    Math.min(100, value)
-  );
-
-  return (
-    <View
-      style={[
-        styles.track,
-        {
-          backgroundColor,
-        },
-      ]}
-    >
-      <View
-        style={[
-          styles.fill,
-          {
-            backgroundColor: color,
-            width: `${safeValue}%`,
-          },
-        ]}
+      <Feather
+        name={checked ? 'check' : 'circle'}
+        size={18}
+        color={checked ? '#FFFFFF' : '#6D7E7B'}
       />
-    </View>
+    </Pressable>
   );
 }
 
@@ -283,7 +206,6 @@ export default function HomeScreen() {
 
   const {
     state,
-    todayDay,
     getLog,
     toggleWater,
     toggleMeal,
@@ -293,387 +215,309 @@ export default function HomeScreen() {
     advice,
   } = useDailyBalance();
 
-  const t = useCopy(state.language);
+  const { t } = useCopy(state.language);
 
-  const plan = getWeeklyPlan(
-    state.language,
-    todayDay
+  const todayDay = new Date().getDay();
+
+  const plan = useMemo(
+    () => getWeeklyPlan(todayDay, state.mode),
+    [todayDay, state.mode]
   );
 
-  const log = getLog(
-    todayDay,
-    state.mode
-  );
+  const log = getLog(todayDay, state.mode);
 
-  const schedule =
-    state.mode === 'work'
-      ? plan.workSchedule
-      : plan.vacationSchedule;
-
-  const mealsDone =
-    plan.meals.filter(
-      (meal) => Boolean(log.meals[meal.id])
-    ).length;
-
-  const exercisesDone =
-    plan.exercises.filter(
-      (exercise) =>
-        Boolean(log.exercises[exercise.id])
-    ).length;
-
-  const scheduleDone =
-    schedule.filter(
-      (item) =>
-        Boolean(log.schedule[item.id])
-    ).length;
-
-  const tasksDone =
-    mealsDone +
-    exercisesDone +
-    scheduleDone;
-
-  const tasksTotal =
-    plan.meals.length +
-    plan.exercises.length +
-    schedule.length;
-
-  const progress = useMemo(() => {
-    const current = Number(
-      state.currentWeight
-    );
-
-    const target = Number(
-      state.targetWeight
-    );
-
-    if (
-      !Number.isFinite(current) ||
-      !Number.isFinite(target)
-    ) {
-      return 0;
-    }
-
-    if (current <= target) {
-      return 100;
-    }
-
-    const first =
-      state.weightHistory.length > 0
-        ? Number(
-            state.weightHistory[0].value
-          )
-        : current;
-
-    if (
-      !Number.isFinite(first) ||
-      first <= target
-    ) {
-      return 0;
-    }
-
-    const result =
-      ((first - current) /
-        (first - target)) *
-      100;
-
-    return Math.round(
-      Math.max(
-        0,
-        Math.min(100, result)
-      )
-    );
-  }, [
-    state.currentWeight,
-    state.targetWeight,
-    state.weightHistory,
-  ]);
-
-  const waterProgress = Math.min(
-    100,
-    (log.waterGlasses / 8) * 100
-  );
+  const dayNames = getDayNames(state.language);
 
   const displayName =
-    state.profileName &&
-    state.profileName !== 'Alex'
+    state.profileName && state.profileName !== 'Alex'
       ? state.profileName
       : 'Narimane';
 
-  const dayNames = getDayNames(
-    state.language
-  );
+  const completedMeals = log.meals.filter(Boolean).length;
+  const completedExercises = log.exercises.filter(Boolean).length;
+  const completedSchedule = log.schedule.filter(Boolean).length;
+  const completedWater = log.waterGlasses.filter(Boolean).length;
 
-  const dayName =
-    dayNames[todayDay] ?? '';
+  const totalTasks =
+    plan.meals.length +
+    plan.exercises.length +
+    plan.workSchedule.length;
 
-  const dateLabel = useMemo(() => {
-    try {
-      return new Intl.DateTimeFormat(
-        state.language,
-        {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric',
-        }
-      ).format(new Date());
-    } catch {
-      return '';
-    }
-  }, [state.language]);
+  const completedTasks =
+    completedMeals +
+    completedExercises +
+    completedSchedule;
 
-  const isArabic =
-    state.language === 'ar';
+  const progress =
+    totalTasks > 0
+      ? Math.round((completedTasks / totalTasks) * 100)
+      : 0;
 
-  const directionStyle = isArabic
-    ? styles.rtl
-    : undefined;
+  const waterGoal = 8;
+
+  const currentWeight =
+    state.currentWeight ?? state.weightHistory?.[0]?.value ?? 0;
+
+  const targetWeight = state.targetWeight ?? 0;
+
+  const handleModeChange = async (
+    mode: 'work' | 'vacation'
+  ) => {
+    await Haptics.selectionAsync();
+    setMode(mode);
+  };
 
   return (
     <View
       style={[
-        styles.container,
+        styles.screen,
         {
-          backgroundColor:
-            colors.background,
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
         },
       ]}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingTop:
-            insets.top + 16,
-          paddingHorizontal: 20,
-          paddingBottom:
-            insets.bottom + 110,
-        }}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingBottom: 110 + insets.bottom,
+          },
+        ]}
       >
-        {/* HEADER */}
-        <View
-          style={[
-            styles.header,
-            directionStyle,
-          ]}
-        >
-          <View
-            style={[
-              styles.headerText,
-              isArabic &&
-                styles.headerTextRtl,
-            ]}
-          >
-            <Text
-              style={[
-                styles.date,
-                {
-                  color:
-                    colors.mutedForeground,
-                },
-                directionStyle,
-              ]}
-            >
-              {dateLabel}
-            </Text>
-
+        <View style={styles.header}>
+          <View style={styles.headerText}>
             <Text
               style={[
                 styles.greeting,
-                {
-                  color: colors.navy,
-                },
-                directionStyle,
+                { color: colors.mutedForeground },
+                state.language === 'ar' && styles.rtlText,
               ]}
             >
-              {t.greeting},{' '}
-              {displayName}
+              {t.greeting}
             </Text>
 
             <Text
               style={[
-                styles.day,
-                {
-                  color: colors.primary,
-                },
-                directionStyle,
+                styles.name,
+                { color: colors.text },
+                state.language === 'ar' && styles.rtlText,
               ]}
             >
-              {dayName} · {t.today}
+              {displayName} 👋
+            </Text>
+
+            <Text
+              style={[
+                styles.date,
+                { color: colors.mutedForeground },
+                state.language === 'ar' && styles.rtlText,
+              ]}
+            >
+              {dayNames[todayDay]}
             </Text>
           </View>
 
           <View
             style={[
               styles.headerIcon,
-              {
-                backgroundColor:
-                  colors.card,
-              },
+              { backgroundColor: colors.mint },
             ]}
           >
             <Feather
-              name="heart"
-              size={20}
-              color={colors.coral}
+              name="sun"
+              size={24}
+              color={colors.primary}
             />
           </View>
         </View>
 
-        {/* ROMANTIC SURPRISE */}
-        <RomanticWelcome
-          language={state.language}
-        />
+        <RomanticWelcome language={state.language} />
 
-        {/* MODE */}
         <View
           style={[
             styles.modeCard,
             {
-              backgroundColor:
-                colors.mint,
+              backgroundColor: colors.card,
+              borderColor: colors.border,
             },
-            directionStyle,
-          ]}
-        >
-          <View
-            style={[
-              styles.modeText,
-              isArabic &&
-                styles.modeTextRtl,
-            ]}
-          >
-            <Text
-              style={[
-                styles.modeTitle,
-                {
-                  color: colors.navy,
-                },
-                directionStyle,
-              ]}
-            >
-              {state.mode === 'work'
-                ? t.work
-                : t.vacation}
-            </Text>
-
-            <Text
-              style={[
-                styles.modeSubtitle,
-                {
-                  color:
-                    colors.secondaryForeground,
-                },
-                directionStyle,
-              ]}
-            >
-              {state.mode === 'work'
-                ? t.workSubtitle
-                : t.vacationSubtitle}
-            </Text>
-          </View>
-
-          <Pressable
-            onPress={() => {
-              Haptics.selectionAsync().catch(
-                () => undefined
-              );
-
-              setMode(
-                state.mode === 'work'
-                  ? 'vacation'
-                  : 'work'
-              );
-            }}
-            style={[
-              styles.modeButton,
-              {
-                backgroundColor:
-                  colors.card,
-              },
-            ]}
-          >
-            <Feather
-              name={
-                state.mode === 'work'
-                  ? 'briefcase'
-                  : 'sun'
-              }
-              size={18}
-              color={colors.navy}
-            />
-          </Pressable>
-        </View>
-
-        {/* TODAY HEADER */}
-        <View
-          style={[
-            styles.sectionHeader,
-            directionStyle,
           ]}
         >
           <Text
             style={[
               styles.sectionTitle,
-              {
-                color: colors.navy,
-              },
-              directionStyle,
+              { color: colors.text },
+              state.language === 'ar' && styles.rtlText,
             ]}
           >
-            {t.today}
+            {state.language === 'ar'
+              ? 'وضع اليوم'
+              : state.language === 'fr'
+                ? 'Mode du jour'
+                : 'Today’s mode'}
           </Text>
+
+          <View style={styles.modeButtons}>
+            <Pressable
+              onPress={() => handleModeChange('work')}
+              style={[
+                styles.modeButton,
+                {
+                  backgroundColor:
+                    state.mode === 'work'
+                      ? colors.primary
+                      : colors.secondary,
+                },
+              ]}
+            >
+              <Feather
+                name="briefcase"
+                size={18}
+                color={
+                  state.mode === 'work'
+                    ? colors.primaryForeground
+                    : colors.secondaryForeground
+                }
+              />
+
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  {
+                    color:
+                      state.mode === 'work'
+                        ? colors.primaryForeground
+                        : colors.secondaryForeground,
+                  },
+                ]}
+              >
+                {t.work}
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => handleModeChange('vacation')}
+              style={[
+                styles.modeButton,
+                {
+                  backgroundColor:
+                    state.mode === 'vacation'
+                      ? colors.primary
+                      : colors.secondary,
+                },
+              ]}
+            >
+              <Feather
+                name="sun"
+                size={18}
+                color={
+                  state.mode === 'vacation'
+                    ? colors.primaryForeground
+                    : colors.secondaryForeground
+                }
+              />
+
+              <Text
+                style={[
+                  styles.modeButtonText,
+                  {
+                    color:
+                      state.mode === 'vacation'
+                        ? colors.primaryForeground
+                        : colors.secondaryForeground,
+                  },
+                ]}
+              >
+                {t.vacation}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+
+        <View
+          style={[
+            styles.progressCard,
+            { backgroundColor: colors.primary },
+          ]}
+        >
+          <View style={styles.progressHeader}>
+            <View style={{ flex: 1 }}>
+              <Text
+                style={[
+                  styles.progressTitle,
+                  state.language === 'ar' && styles.rtlText,
+                ]}
+              >
+                {t.today}
+              </Text>
+
+              <Text
+                style={[
+                  styles.progressSubtitle,
+                  state.language === 'ar' && styles.rtlText,
+                ]}
+              >
+                {completedTasks} / {totalTasks} {t.tasks}
+              </Text>
+            </View>
+
+            <View style={styles.progressCircle}>
+              <Text style={styles.progressNumber}>
+                {progress}%
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                { width: `${progress}%` },
+              ]}
+            />
+          </View>
 
           <Text
             style={[
-              styles.sectionMeta,
-              {
-                color:
-                  colors.mutedForeground,
-              },
+              styles.progressRemaining,
+              state.language === 'ar' && styles.rtlText,
             ]}
           >
-            {tasksDone}/{tasksTotal}{' '}
-            {t.tasks}
+            {progress === 100
+              ? t.allDone
+              : `${totalTasks - completedTasks} ${t.remaining}`}
           </Text>
         </View>
 
-        {/* METRICS */}
-        <View style={styles.metrics}>
-          {/* WEIGHT */}
+        <View style={styles.metricsRow}>
           <View
             style={[
-              styles.metric,
+              styles.metricCard,
               {
-                backgroundColor:
-                  colors.card,
+                backgroundColor: colors.card,
+                borderColor: colors.border,
               },
             ]}
           >
             <View
               style={[
                 styles.metricIcon,
-                {
-                  backgroundColor:
-                    colors.lavender,
-                },
+                { backgroundColor: colors.lavender },
               ]}
             >
               <Feather
                 name="activity"
-                size={18}
-                color={
-                  colors.lavenderStrong
-                }
+                size={20}
+                color={colors.lavenderStrong}
               />
             </View>
 
             <Text
               style={[
                 styles.metricLabel,
-                {
-                  color:
-                    colors.mutedForeground,
-                },
-                directionStyle,
+                { color: colors.mutedForeground },
+                state.language === 'ar' && styles.rtlText,
               ]}
             >
               {t.weight}
@@ -682,63 +526,42 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.metricValue,
-                {
-                  color: colors.navy,
-                },
+                { color: colors.text },
               ]}
             >
-              {Number(
-                state.currentWeight
-              ).toFixed(1)}{' '}
-              <Text style={styles.unit}>
-                {t.kg}
+              {currentWeight || '--'} {t.kg}
+            </Text>
+
+            {targetWeight > 0 && (
+              <Text
+                style={[
+                  styles.metricTarget,
+                  { color: colors.mutedForeground },
+                ]}
+              >
+                {t.target}: {targetWeight} {t.kg}
               </Text>
-            </Text>
-
-            <Text
-              style={[
-                styles.metricSmall,
-                {
-                  color: colors.success,
-                },
-              ]}
-            >
-              {progress}% {t.progress}
-            </Text>
-
-            <ProgressBar
-              value={progress}
-              color={
-                colors.lavenderStrong
-              }
-              backgroundColor={
-                colors.muted
-              }
-            />
+            )}
           </View>
 
-          {/* WATER */}
           <View
             style={[
-              styles.metric,
+              styles.metricCard,
               {
-                backgroundColor:
-                  colors.card,
+                backgroundColor: colors.card,
+                borderColor: colors.border,
               },
             ]}
           >
             <View
               style={[
                 styles.metricIcon,
-                {
-                  backgroundColor:
-                    colors.mint,
-                },
+                { backgroundColor: colors.mint },
               ]}
             >
               <Feather
                 name="droplet"
-                size={18}
+                size={20}
                 color={colors.primary}
               />
             </View>
@@ -746,11 +569,8 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.metricLabel,
-                {
-                  color:
-                    colors.mutedForeground,
-                },
-                directionStyle,
+                { color: colors.mutedForeground },
+                state.language === 'ar' && styles.rtlText,
               ]}
             >
               {t.water}
@@ -759,70 +579,38 @@ export default function HomeScreen() {
             <Text
               style={[
                 styles.metricValue,
-                {
-                  color: colors.navy,
-                },
+                { color: colors.text },
               ]}
             >
-              {log.waterGlasses}
-              <Text style={styles.unit}>
-                /8
-              </Text>
+              {completedWater}/{waterGoal}
             </Text>
 
             <Text
               style={[
-                styles.metricSmall,
-                {
-                  color:
-                    colors.mutedForeground,
-                },
+                styles.metricTarget,
+                { color: colors.mutedForeground },
               ]}
             >
               {t.glasses}
             </Text>
-
-            <ProgressBar
-              value={waterProgress}
-              color={colors.primary}
-              backgroundColor={
-                colors.muted
-              }
-            />
           </View>
         </View>
-
-        {/* WATER TRACKER */}
-        <View
+                <View
           style={[
-            styles.waterCard,
+            styles.sectionCard,
             {
-              backgroundColor:
-                colors.navy,
+              backgroundColor: colors.card,
+              borderColor: colors.border,
             },
           ]}
         >
-          <View
-            style={[
-              styles.waterTop,
-              directionStyle,
-            ]}
-          >
-            <View
-              style={
-                isArabic
-                  ? styles.waterTextRtl
-                  : undefined
-              }
-            >
+          <View style={styles.sectionHeader}>
+            <View style={{ flex: 1 }}>
               <Text
                 style={[
-                  styles.waterLabel,
-                  {
-                    color:
-                      colors.mintStrong,
-                  },
-                  directionStyle,
+                  styles.sectionTitle,
+                  { color: colors.text },
+                  state.language === 'ar' && styles.rtlText,
                 ]}
               >
                 {t.water}
@@ -830,496 +618,563 @@ export default function HomeScreen() {
 
               <Text
                 style={[
-                  styles.waterTitle,
-                  {
-                    color: colors.card,
-                  },
-                  directionStyle,
+                  styles.sectionSubtitle,
+                  { color: colors.mutedForeground },
+                  state.language === 'ar' && styles.rtlText,
                 ]}
               >
-                {log.waterGlasses >= 8
-                  ? t.allDone
-                  : `${8 - log.waterGlasses} ${t.glasses} ${t.remaining}`}
+                {completedWater} / {waterGoal} {t.glasses}
               </Text>
             </View>
 
             <Feather
               name="droplet"
-              size={25}
-              color={colors.mintStrong}
+              size={24}
+              color={colors.primary}
             />
           </View>
 
-          <View style={styles.glasses}>
-            {Array.from(
-              { length: 8 },
-              (_, index) => {
-                const filled =
-                  index <
-                  log.waterGlasses;
+          <View style={styles.waterGrid}>
+            {Array.from({ length: waterGoal }).map((_, index) => {
+              const checked = !!log.waterGlasses[index];
 
-                return (
-                  <Pressable
-                    key={index}
-                    onPress={() => {
-                      Haptics.selectionAsync().catch(
-                        () => undefined
-                      );
+              return (
+                <Pressable
+                  key={`water-${index}`}
+                  onPress={async () => {
+                    await Haptics.selectionAsync();
+                    toggleWater(
+                      index,
+                      todayDay,
+                      state.mode
+                    );
+                  }}
+                  style={[
+                    styles.waterItem,
+                    {
+                      backgroundColor: checked
+                        ? colors.primary
+                        : colors.muted,
+                    },
+                  ]}
+                >
+                  <Feather
+                    name="droplet"
+                    size={20}
+                    color={
+                      checked
+                        ? colors.primaryForeground
+                        : colors.mutedForeground
+                    }
+                  />
 
-                      toggleWater(
-                        index,
-                        todayDay,
-                        state.mode
-                      );
-                    }}
+                  <Text
                     style={[
-                      styles.glass,
+                      styles.waterNumber,
                       {
-                        backgroundColor:
-                          filled
-                            ? colors.mintStrong
-                            : 'rgba(255,255,255,0.10)',
-                        borderColor:
-                          filled
-                            ? colors.mintStrong
-                            : 'rgba(255,255,255,0.25)',
+                        color: checked
+                          ? colors.primaryForeground
+                          : colors.mutedForeground,
                       },
                     ]}
                   >
-                    <Feather
-                      name="droplet"
-                      size={13}
-                      color={
-                        filled
-                          ? colors.navy
-                          : colors.card
-                      }
-                    />
-                  </Pressable>
-                );
-              }
-            )}
-                    </View>
+                    {index + 1}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
-        {/* Meals */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+        <View style={styles.sectionHeaderOutside}>
+          <Text
+            style={[
+              styles.largeSectionTitle,
+              { color: colors.text },
+              state.language === 'ar' && styles.rtlText,
+            ]}
+          >
             {t.meals}
           </Text>
 
-          <View style={styles.listCard}>
-            {plan.meals.map((meal) => {
-              const completed = !!log.meals?.[meal.id];
-
-              return (
-                <View
-                  key={meal.id}
-                  style={[
-                    styles.listRow,
-                    { borderBottomColor: colors.border },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.listIcon,
-                      { backgroundColor: colors.primary },
-                    ]}
-                  >
-                    <Feather
-                      name="coffee"
-                      size={18}
-                      color={colors.primaryForeground}
-                    />
-                  </View>
-
-                  <View style={styles.listContent}>
-                    <Text
-                      style={[
-                        styles.listTitle,
-                        { color: colors.foreground },
-                      ]}
-                    >
-                      {meal.title}
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.listSubtitle,
-                        { color: colors.mutedForeground },
-                      ]}
-                    >
-                      {meal.time}
-                    </Text>
-
-                    {meal.detail ? (
-                      <Text
-                        style={[
-                          styles.listDetail,
-                          { color: colors.mutedForeground },
-                        ]}
-                      >
-                        {meal.detail}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  <CheckButton
-                    checked={completed}
-                    onPress={() => {
-                      Haptics.selectionAsync().catch(() => undefined);
-                      toggleMeal(
-                        meal.id,
-                        todayDay,
-                        state.mode
-                      );
-                    }}
-                    colors={colors}
-                  />
-                </View>
-              );
-            })}
-          </View>
+          <Text
+            style={[
+              styles.sectionCount,
+              { color: colors.mutedForeground },
+            ]}
+          >
+            {completedMeals}/{plan.meals.length}
+          </Text>
         </View>
 
-        {/* Movement */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+        <View
+          style={[
+            styles.listCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          {plan.meals.map((meal, index) => {
+            const checked = !!log.meals[index];
+
+            return (
+              <View
+                key={meal.id}
+                style={[
+                  styles.listItem,
+                  index < plan.meals.length - 1 &&
+                    styles.listItemBorder,
+                  {
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.timeBadge,
+                    { backgroundColor: colors.mint },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.timeText,
+                      { color: colors.primary },
+                    ]}
+                  >
+                    {meal.time}
+                  </Text>
+                </View>
+
+                <View style={styles.listContent}>
+                  <Text
+                    style={[
+                      styles.listTitle,
+                      { color: colors.text },
+                      checked && styles.completedText,
+                      state.language === 'ar' &&
+                        styles.rtlText,
+                    ]}
+                  >
+                    {meal.title}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.listDetail,
+                      { color: colors.mutedForeground },
+                      checked && styles.completedText,
+                      state.language === 'ar' &&
+                        styles.rtlText,
+                    ]}
+                  >
+                    {meal.detail}
+                  </Text>
+                </View>
+
+                <CheckButton
+                  checked={checked}
+                  onPress={async () => {
+                    await Haptics.selectionAsync();
+
+                    toggleMeal(
+                      meal.id,
+                      todayDay,
+                      state.mode
+                    );
+                  }}
+                />
+              </View>
+            );
+          })}
+        </View>
+
+        <View style={styles.sectionHeaderOutside}>
+          <Text
+            style={[
+              styles.largeSectionTitle,
+              { color: colors.text },
+              state.language === 'ar' && styles.rtlText,
+            ]}
+          >
             {t.movement}
           </Text>
 
-          <View style={styles.listCard}>
-            {plan.exercises.map((exercise) => {
-              const completed = !!log.exercises?.[exercise.id];
-
-              return (
-                <View
-                  key={exercise.id}
-                  style={[
-                    styles.listRow,
-                    { borderBottomColor: colors.border },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.listIcon,
-                      { backgroundColor: colors.secondary },
-                    ]}
-                  >
-                    <Feather
-                      name="activity"
-                      size={18}
-                      color={colors.secondaryForeground}
-                    />
-                  </View>
-
-                  <View style={styles.listContent}>
-                    <Text
-                      style={[
-                        styles.listTitle,
-                        { color: colors.foreground },
-                      ]}
-                    >
-                      {exercise.title}
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.listSubtitle,
-                        { color: colors.mutedForeground },
-                      ]}
-                    >
-                      {exercise.duration}
-                      {exercise.difficulty
-                        ? ` • ${exercise.difficulty}`
-                        : ''}
-                    </Text>
-
-                    {exercise.instructions ? (
-                      <Text
-                        style={[
-                          styles.listDetail,
-                          { color: colors.mutedForeground },
-                        ]}
-                      >
-                        {exercise.instructions}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  <CheckButton
-                    checked={completed}
-                    onPress={() => {
-                      Haptics.selectionAsync().catch(() => undefined);
-                      toggleExercise(
-                        exercise.id,
-                        todayDay,
-                        state.mode
-                      );
-                    }}
-                    colors={colors}
-                  />
-                </View>
-              );
-            })}
-          </View>
+          <Text
+            style={[
+              styles.sectionCount,
+              { color: colors.mutedForeground },
+            ]}
+          >
+            {completedExercises}/{plan.exercises.length}
+          </Text>
         </View>
 
-        {/* Schedule */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+        <View
+          style={[
+            styles.listCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          {plan.exercises.map((exercise, index) => {
+            const checked = !!log.exercises[index];
+
+            return (
+              <View
+                key={exercise.id}
+                style={[
+                  styles.listItem,
+                  index < plan.exercises.length - 1 &&
+                    styles.listItemBorder,
+                  {
+                    borderBottomColor: colors.border,
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.exerciseIcon,
+                    {
+                      backgroundColor: colors.lavender,
+                    },
+                  ]}
+                >
+                  <Feather
+                    name="activity"
+                    size={20}
+                    color={colors.lavenderStrong}
+                  />
+                </View>
+
+                <View style={styles.listContent}>
+                  <Text
+                    style={[
+                      styles.listTitle,
+                      { color: colors.text },
+                      checked && styles.completedText,
+                      state.language === 'ar' &&
+                        styles.rtlText,
+                    ]}
+                  >
+                    {exercise.title}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.listDetail,
+                      { color: colors.mutedForeground },
+                      checked && styles.completedText,
+                      state.language === 'ar' &&
+                        styles.rtlText,
+                    ]}
+                  >
+                    {exercise.duration} · {exercise.difficulty}
+                  </Text>
+                </View>
+
+                <CheckButton
+                  checked={checked}
+                  onPress={async () => {
+                    await Haptics.selectionAsync();
+
+                    toggleExercise(
+                      exercise.id,
+                      todayDay,
+                      state.mode
+                    );
+                  }}
+                />
+              </View>
+            );
+          })}
+        </View>
+
+        <View style={styles.sectionHeaderOutside}>
+          <Text
+            style={[
+              styles.largeSectionTitle,
+              { color: colors.text },
+              state.language === 'ar' && styles.rtlText,
+            ]}
+          >
             {t.schedule}
           </Text>
 
-          <View style={styles.listCard}>
-            {plan.schedule.map((item) => {
-              const completed = !!log.schedule?.[item.id];
-
-              return (
-                <View
-                  key={item.id}
-                  style={[
-                    styles.listRow,
-                    { borderBottomColor: colors.border },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.listIcon,
-                      { backgroundColor: colors.lavenderStrong },
-                    ]}
-                  >
-                    <Feather
-                      name={
-                        item.kind === 'work'
-                          ? 'briefcase'
-                          : item.kind === 'meal'
-                            ? 'coffee'
-                            : 'clock'
-                      }
-                      size={18}
-                      color={colors.navy}
-                    />
-                  </View>
-
-                  <View style={styles.listContent}>
-                    <Text
-                      style={[
-                        styles.listTitle,
-                        { color: colors.foreground },
-                      ]}
-                    >
-                      {item.title}
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.listSubtitle,
-                        { color: colors.mutedForeground },
-                      ]}
-                    >
-                      {item.time}
-                    </Text>
-
-                    {item.detail ? (
-                      <Text
-                        style={[
-                          styles.listDetail,
-                          { color: colors.mutedForeground },
-                        ]}
-                      >
-                        {item.detail}
-                      </Text>
-                    ) : null}
-                  </View>
-
-                  <CheckButton
-                    checked={completed}
-                    onPress={() => {
-                      Haptics.selectionAsync().catch(() => undefined);
-                      toggleSchedule(
-                        item.id,
-                        todayDay,
-                        state.mode
-                      );
-                    }}
-                    colors={colors}
-                  />
-                </View>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Advice */}
-        <View style={styles.section}>
-          <View
+          <Text
             style={[
-              styles.adviceCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: colors.border,
-              },
+              styles.sectionCount,
+              { color: colors.mutedForeground },
             ]}
           >
-            <View style={styles.adviceHeader}>
+            {completedSchedule}/
+            {state.mode === 'work'
+              ? plan.workSchedule.length
+              : plan.vacationSchedule.length}
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.listCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          {(state.mode === 'work'
+            ? plan.workSchedule
+            : plan.vacationSchedule
+          ).map((item, index, items) => {
+            const checked = !!log.schedule[index];
+
+            return (
               <View
+                key={item.id}
                 style={[
-                  styles.adviceIcon,
-                  { backgroundColor: colors.primary },
+                  styles.listItem,
+                  index < items.length - 1 &&
+                    styles.listItemBorder,
+                  {
+                    borderBottomColor: colors.border,
+                  },
                 ]}
               >
-                <Feather
-                  name="heart"
-                  size={18}
-                  color={colors.primaryForeground}
+                <View
+                  style={[
+                    styles.timeBadge,
+                    { backgroundColor: colors.lavender },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.timeText,
+                      { color: colors.lavenderStrong },
+                    ]}
+                  >
+                    {item.time}
+                  </Text>
+                </View>
+
+                <View style={styles.listContent}>
+                  <Text
+                    style={[
+                      styles.listTitle,
+                      { color: colors.text },
+                      checked && styles.completedText,
+                      state.language === 'ar' &&
+                        styles.rtlText,
+                    ]}
+                  >
+                    {item.title}
+                  </Text>
+                </View>
+
+                <CheckButton
+                  checked={checked}
+                  onPress={async () => {
+                    await Haptics.selectionAsync();
+
+                    toggleSchedule(
+                      item.id,
+                      todayDay,
+                      state.mode
+                    );
+                  }}
                 />
               </View>
+            );
+          })}
+        </View>
 
-              <Text
-                style={[
-                  styles.adviceTitle,
-                  { color: colors.foreground },
-                ]}
-              >
-                {t.advice}
-              </Text>
-            </View>
+        <View
+          style={[
+            styles.adviceCard,
+            {
+              backgroundColor: colors.lavender,
+              borderColor: colors.lavenderStrong,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.adviceIcon,
+              { backgroundColor: colors.lavenderStrong },
+            ]}
+          >
+            <Feather
+              name="heart"
+              size={20}
+              color="#FFFFFF"
+            />
+          </View>
+
+          <View style={styles.adviceContent}>
+            <Text
+              style={[
+                styles.adviceTitle,
+                { color: colors.text },
+                state.language === 'ar' && styles.rtlText,
+              ]}
+            >
+              {t.advice}
+            </Text>
 
             <Text
               style={[
                 styles.adviceText,
-                { color: colors.mutedForeground },
+                { color: colors.secondaryForeground },
+                state.language === 'ar' && styles.rtlText,
               ]}
             >
-              {plan.advice}
+              {advice}
             </Text>
           </View>
         </View>
-
-        <View style={styles.bottomSpacer} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
   },
 
-  scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 18,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 18,
+  },
+
+  headerText: {
+    flex: 1,
   },
 
   greeting: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
     marginBottom: 3,
   },
 
   name: {
-    fontSize: 25,
+    fontSize: 28,
     fontWeight: '800',
+    marginBottom: 4,
   },
 
-  headerBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  date: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  headerIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  romanticContainer: {
+    marginBottom: 18,
   },
 
   romanticCard: {
+    borderWidth: 1.5,
     borderRadius: 24,
-    padding: 18,
-    marginBottom: 18,
+    backgroundColor: '#FFFFFF',
+    minHeight: 180,
     overflow: 'hidden',
   },
 
-  romanticTop: {
-    flexDirection: 'row',
+  romanticReveal: {
+    flex: 1,
+    minHeight: 180,
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+
+  heartCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 12,
   },
 
-  romanticIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-
-  romanticLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-
-  romanticMessage: {
-    fontSize: 18,
-    lineHeight: 27,
-    fontWeight: '700',
+  romanticTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#17343B',
+    textAlign: 'center',
+    marginBottom: 8,
   },
 
   romanticHint: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#6D7E7B',
+    textAlign: 'center',
+  },
+
+  romanticMessage: {
+    minHeight: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 22,
+  },
+
+  romanticText: {
+    fontSize: 17,
+    lineHeight: 27,
+    color: '#17343B',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+
+  romanticSmall: {
     fontSize: 12,
-    marginTop: 9,
+    color: '#8E77B7',
+    marginTop: 14,
+    fontWeight: '600',
   },
 
   modeCard: {
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 18,
-  },
-
-  modeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 13,
-  },
-
-  modeIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-
-  modeTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-  },
-
-  modeSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
+    borderWidth: 1,
+    borderRadius: 22,
+    padding: 14,
+    marginBottom: 16,
   },
 
   modeButtons: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 12,
   },
 
   modeButton: {
     flex: 1,
     minHeight: 46,
-    borderRadius: 14,
+    borderRadius: 15,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    gap: 8,
+    paddingHorizontal: 10,
   },
 
   modeButtonText: {
@@ -1327,180 +1182,268 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  section: {
-    marginBottom: 18,
+  progressCard: {
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 16,
   },
 
-  sectionTitle: {
-    fontSize: 18,
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  progressTitle: {
+    color: '#FFFFFF',
+    fontSize: 20,
     fontWeight: '800',
-    marginBottom: 10,
+    marginBottom: 5,
+  },
+
+  progressSubtitle: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  progressCircle: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  progressNumber: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  progressTrack: {
+    height: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    overflow: 'hidden',
+    marginTop: 18,
+  },
+
+  progressFill: {
+    height: '100%',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+  },
+
+  progressRemaining: {
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 9,
   },
 
   metricsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginBottom: 18,
   },
 
   metricCard: {
     flex: 1,
-    minHeight: 108,
-    borderRadius: 20,
+    borderWidth: 1,
+    borderRadius: 22,
     padding: 15,
   },
 
   metricIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: 10,
   },
 
   metricLabel: {
     fontSize: 12,
-    marginBottom: 3,
+    fontWeight: '600',
+    marginBottom: 4,
   },
 
   metricValue: {
-    fontSize: 21,
+    fontSize: 22,
     fontWeight: '800',
   },
 
-  metricSmall: {
+  metricTarget: {
     fontSize: 11,
-    marginTop: 3,
+    marginTop: 4,
   },
 
-  waterCard: {
+  sectionCard: {
+    borderWidth: 1,
     borderRadius: 22,
     padding: 16,
+    marginBottom: 20,
   },
 
-  waterHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 15,
   },
 
-  waterTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  waterIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
-  },
-
-  waterTitle: {
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 17,
     fontWeight: '800',
   },
 
-  waterCount: {
-    fontSize: 13,
-    fontWeight: '700',
+  sectionSubtitle: {
+    fontSize: 12,
+    marginTop: 4,
   },
 
-  glasses: {
+  waterGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 9,
   },
 
-  glass: {
-    width: 34,
-    height: 42,
-    borderRadius: 12,
-    borderWidth: 1,
+  waterItem: {
+    width: '22.5%',
+    minHeight: 58,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  waterNumber: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+
+  sectionHeaderOutside: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    paddingHorizontal: 2,
+  },
+
+  largeSectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+
+  sectionCount: {
+    fontSize: 12,
+    fontWeight: '700',
   },
 
   listCard: {
-    borderRadius: 20,
+    borderWidth: 1,
+    borderRadius: 22,
     overflow: 'hidden',
+    marginBottom: 20,
   },
 
-  listRow: {
+  listItem: {
+    minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
     paddingHorizontal: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 12,
+    gap: 11,
   },
 
-  listIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  listItemBorder: {
+    borderBottomWidth: 1,
+  },
+
+  timeBadge: {
+    minWidth: 58,
+    height: 40,
+    borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 11,
+    paddingHorizontal: 7,
+  },
+
+  timeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  exerciseIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   listContent: {
     flex: 1,
-    paddingRight: 8,
   },
 
   listTitle: {
     fontSize: 14,
     fontWeight: '700',
-  },
-
-  listSubtitle: {
-    fontSize: 12,
-    marginTop: 3,
+    lineHeight: 20,
   },
 
   listDetail: {
     fontSize: 11,
-    lineHeight: 16,
-    marginTop: 4,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+
+  completedText: {
+    textDecorationLine: 'line-through',
+    opacity: 0.55,
   },
 
   checkButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1.5,
+    width: 38,
+    height: 38,
+    borderRadius: 13,
+    backgroundColor: '#EEF3F0',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  checkButtonDone: {
+    backgroundColor: '#2C9A77',
   },
 
   adviceCard: {
-    borderRadius: 20,
-    padding: 17,
     borderWidth: 1,
-  },
-
-  adviceHeader: {
+    borderRadius: 22,
+    padding: 15,
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 11,
+    gap: 12,
+    marginBottom: 10,
   },
 
   adviceIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 42,
+    height: 42,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+  },
+
+  adviceContent: {
+    flex: 1,
   },
 
   adviceTitle: {
     fontSize: 16,
     fontWeight: '800',
+    marginBottom: 5,
   },
 
   adviceText: {
@@ -1508,7 +1451,7 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
 
-  bottomSpacer: {
-    height: 24,
+  rtlText: {
+    textAlign: 'right',
   },
 });
