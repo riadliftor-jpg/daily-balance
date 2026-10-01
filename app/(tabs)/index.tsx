@@ -899,4 +899,616 @@ export default function HomeScreen() {
                 );
               }
             )}
-          <
+                    </View>
+        </View>
+
+        {/* Meals */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            {t.meals}
+          </Text>
+
+          <View style={styles.listCard}>
+            {plan.meals.map((meal) => {
+              const completed = !!log.meals?.[meal.id];
+
+              return (
+                <View
+                  key={meal.id}
+                  style={[
+                    styles.listRow,
+                    { borderBottomColor: colors.border },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.listIcon,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  >
+                    <Feather
+                      name="coffee"
+                      size={18}
+                      color={colors.primaryForeground}
+                    />
+                  </View>
+
+                  <View style={styles.listContent}>
+                    <Text
+                      style={[
+                        styles.listTitle,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      {meal.title}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.listSubtitle,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {meal.time}
+                    </Text>
+
+                    {meal.detail ? (
+                      <Text
+                        style={[
+                          styles.listDetail,
+                          { color: colors.mutedForeground },
+                        ]}
+                      >
+                        {meal.detail}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  <CheckButton
+                    checked={completed}
+                    onPress={() => {
+                      Haptics.selectionAsync().catch(() => undefined);
+                      toggleMeal(
+                        meal.id,
+                        todayDay,
+                        state.mode
+                      );
+                    }}
+                    colors={colors}
+                  />
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Movement */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            {t.movement}
+          </Text>
+
+          <View style={styles.listCard}>
+            {plan.exercises.map((exercise) => {
+              const completed = !!log.exercises?.[exercise.id];
+
+              return (
+                <View
+                  key={exercise.id}
+                  style={[
+                    styles.listRow,
+                    { borderBottomColor: colors.border },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.listIcon,
+                      { backgroundColor: colors.secondary },
+                    ]}
+                  >
+                    <Feather
+                      name="activity"
+                      size={18}
+                      color={colors.secondaryForeground}
+                    />
+                  </View>
+
+                  <View style={styles.listContent}>
+                    <Text
+                      style={[
+                        styles.listTitle,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      {exercise.title}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.listSubtitle,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {exercise.duration}
+                      {exercise.difficulty
+                        ? ` • ${exercise.difficulty}`
+                        : ''}
+                    </Text>
+
+                    {exercise.instructions ? (
+                      <Text
+                        style={[
+                          styles.listDetail,
+                          { color: colors.mutedForeground },
+                        ]}
+                      >
+                        {exercise.instructions}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  <CheckButton
+                    checked={completed}
+                    onPress={() => {
+                      Haptics.selectionAsync().catch(() => undefined);
+                      toggleExercise(
+                        exercise.id,
+                        todayDay,
+                        state.mode
+                      );
+                    }}
+                    colors={colors}
+                  />
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Schedule */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            {t.schedule}
+          </Text>
+
+          <View style={styles.listCard}>
+            {plan.schedule.map((item) => {
+              const completed = !!log.schedule?.[item.id];
+
+              return (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.listRow,
+                    { borderBottomColor: colors.border },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.listIcon,
+                      { backgroundColor: colors.lavenderStrong },
+                    ]}
+                  >
+                    <Feather
+                      name={
+                        item.kind === 'work'
+                          ? 'briefcase'
+                          : item.kind === 'meal'
+                            ? 'coffee'
+                            : 'clock'
+                      }
+                      size={18}
+                      color={colors.navy}
+                    />
+                  </View>
+
+                  <View style={styles.listContent}>
+                    <Text
+                      style={[
+                        styles.listTitle,
+                        { color: colors.foreground },
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.listSubtitle,
+                        { color: colors.mutedForeground },
+                      ]}
+                    >
+                      {item.time}
+                    </Text>
+
+                    {item.detail ? (
+                      <Text
+                        style={[
+                          styles.listDetail,
+                          { color: colors.mutedForeground },
+                        ]}
+                      >
+                        {item.detail}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  <CheckButton
+                    checked={completed}
+                    onPress={() => {
+                      Haptics.selectionAsync().catch(() => undefined);
+                      toggleSchedule(
+                        item.id,
+                        todayDay,
+                        state.mode
+                      );
+                    }}
+                    colors={colors}
+                  />
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Advice */}
+        <View style={styles.section}>
+          <View
+            style={[
+              styles.adviceCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <View style={styles.adviceHeader}>
+              <View
+                style={[
+                  styles.adviceIcon,
+                  { backgroundColor: colors.primary },
+                ]}
+              >
+                <Feather
+                  name="heart"
+                  size={18}
+                  color={colors.primaryForeground}
+                />
+              </View>
+
+              <Text
+                style={[
+                  styles.adviceTitle,
+                  { color: colors.foreground },
+                ]}
+              >
+                {t.advice}
+              </Text>
+            </View>
+
+            <Text
+              style={[
+                styles.adviceText,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              {plan.advice}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    paddingHorizontal: 18,
+    paddingTop: 12,
+  },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+
+  greeting: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+
+  name: {
+    fontSize: 25,
+    fontWeight: '800',
+  },
+
+  headerBadge: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  romanticCard: {
+    borderRadius: 24,
+    padding: 18,
+    marginBottom: 18,
+    overflow: 'hidden',
+  },
+
+  romanticTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  romanticIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+
+  romanticLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  romanticMessage: {
+    fontSize: 18,
+    lineHeight: 27,
+    fontWeight: '700',
+  },
+
+  romanticHint: {
+    fontSize: 12,
+    marginTop: 9,
+  },
+
+  modeCard: {
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 18,
+  },
+
+  modeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 13,
+  },
+
+  modeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+
+  modeTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  modeSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  modeButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+
+  modeButton: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+
+  modeButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  section: {
+    marginBottom: 18,
+  },
+
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 10,
+  },
+
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+
+  metricCard: {
+    flex: 1,
+    minHeight: 108,
+    borderRadius: 20,
+    padding: 15,
+  },
+
+  metricIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+
+  metricLabel: {
+    fontSize: 12,
+    marginBottom: 3,
+  },
+
+  metricValue: {
+    fontSize: 21,
+    fontWeight: '800',
+  },
+
+  metricSmall: {
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  waterCard: {
+    borderRadius: 22,
+    padding: 16,
+  },
+
+  waterHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+
+  waterTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  waterIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+
+  waterTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  waterCount: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  glasses: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 9,
+  },
+
+  glass: {
+    width: 34,
+    height: 42,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  listCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+
+  listIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 11,
+  },
+
+  listContent: {
+    flex: 1,
+    paddingRight: 8,
+  },
+
+  listTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  listSubtitle: {
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  listDetail: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 4,
+  },
+
+  checkButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  adviceCard: {
+    borderRadius: 20,
+    padding: 17,
+    borderWidth: 1,
+  },
+
+  adviceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 11,
+  },
+
+  adviceIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+
+  adviceTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+
+  adviceText: {
+    fontSize: 13,
+    lineHeight: 21,
+  },
+
+  bottomSpacer: {
+    height: 24,
+  },
+});
