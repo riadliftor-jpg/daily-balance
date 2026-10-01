@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDailyBalance } from '@/context/DailyBalanceContext';
 import { useColors } from '@/hooks/useColors';
-import { useCopy, getDayNames } from '@/lib/i18n';
+import { getDayNames, useCopy } from '@/lib/i18n';
 import { getWeeklyPlan } from '@/lib/weeklyPlan';
 
 const romanticMessages = {
@@ -39,7 +39,7 @@ const romanticMessages = {
     'Come a little closer... I have a message only you should hear 😉❤️',
     'Some people enter our lives by chance. You entered my heart and stayed there.',
   ],
-};
+} as const;
 
 const romanticColors = [
   '#EE9275',
@@ -51,8 +51,8 @@ const romanticColors = [
 
 function getRomanticMessage(language: 'ar' | 'fr' | 'en') {
   const messages = romanticMessages[language];
-  const day = new Date().getDate();
-  return messages[day % messages.length];
+  const index = new Date().getDate() % messages.length;
+  return messages[index];
 }
 
 function RomanticWelcome({
@@ -72,18 +72,18 @@ function RomanticWelcome({
   const color =
     romanticColors[new Date().getDate() % romanticColors.length];
 
-  const handleReveal = async () => {
+  const reveal = async () => {
     await Haptics.selectionAsync();
 
     Animated.sequence([
       Animated.timing(scale, {
-        toValue: 1.18,
+        toValue: 1.15,
         duration: 180,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
       Animated.timing(scale, {
-        toValue: 0.92,
+        toValue: 0.94,
         duration: 120,
         useNativeDriver: true,
       }),
@@ -115,15 +115,15 @@ function RomanticWelcome({
         style={[
           styles.romanticCard,
           {
-            transform: [{ scale }],
-            opacity,
             borderColor: color,
+            opacity,
+            transform: [{ scale }],
           },
         ]}
       >
         {!revealed ? (
           <Pressable
-            onPress={handleReveal}
+            onPress={reveal}
             style={styles.romanticReveal}
           >
             <View
@@ -132,7 +132,11 @@ function RomanticWelcome({
                 { backgroundColor: color },
               ]}
             >
-              <Feather name="heart" size={28} color="#FFFFFF" />
+              <Feather
+                name="heart"
+                size={28}
+                color="#FFFFFF"
+              />
             </View>
 
             <Text style={styles.romanticTitle}>
@@ -141,7 +145,7 @@ function RomanticWelcome({
 
             <Text style={styles.romanticHint}>
               {language === 'ar'
-                ? 'اضغطي هنا لتكتشفي مفاجأة اليوم'
+                ? 'اضغطي هنا لاكتشاف مفاجأة اليوم'
                 : language === 'fr'
                   ? 'Appuie ici pour découvrir la surprise du jour'
                   : 'Tap here to discover today’s surprise'}
@@ -215,13 +219,13 @@ export default function HomeScreen() {
     advice,
   } = useDailyBalance();
 
-  const { t } = useCopy(state.language);
+  const t = useCopy(state.language);
 
   const todayDay = new Date().getDay();
 
   const plan = useMemo(
-    () => getWeeklyPlan(todayDay, state.mode),
-    [todayDay, state.mode]
+    () => getWeeklyPlan(state.language, todayDay),
+    [state.language, todayDay]
   );
 
   const log = getLog(todayDay, state.mode);
@@ -229,19 +233,33 @@ export default function HomeScreen() {
   const dayNames = getDayNames(state.language);
 
   const displayName =
-    state.profileName && state.profileName !== 'Alex'
+    state.profileName &&
+    state.profileName.trim() &&
+    state.profileName !== 'Alex'
       ? state.profileName
       : 'Narimane';
 
-  const completedMeals = log.meals.filter(Boolean).length;
-  const completedExercises = log.exercises.filter(Boolean).length;
-  const completedSchedule = log.schedule.filter(Boolean).length;
-  const completedWater = log.waterGlasses.filter(Boolean).length;
+  const activeSchedule =
+    state.mode === 'work'
+      ? plan.workSchedule
+      : plan.vacationSchedule;
+
+  const completedMeals = plan.meals.filter(
+    (meal) => !!log.meals[meal.id]
+  ).length;
+
+  const completedExercises = plan.exercises.filter(
+    (exercise) => !!log.exercises[exercise.id]
+  ).length;
+
+  const completedSchedule = activeSchedule.filter(
+    (item) => !!log.schedule[item.id]
+  ).length;
 
   const totalTasks =
     plan.meals.length +
     plan.exercises.length +
-    plan.workSchedule.length;
+    activeSchedule.length;
 
   const completedTasks =
     completedMeals +
@@ -254,13 +272,15 @@ export default function HomeScreen() {
       : 0;
 
   const waterGoal = 8;
+  const waterCount = Math.min(
+    Math.max(log.waterGlasses, 0),
+    waterGoal
+  );
 
-  const currentWeight =
-    state.currentWeight ?? state.weightHistory?.[0]?.value ?? 0;
+  const currentWeight = state.currentWeight;
+  const targetWeight = state.targetWeight;
 
-  const targetWeight = state.targetWeight ?? 0;
-
-  const handleModeChange = async (
+  const changeMode = async (
     mode: 'work' | 'vacation'
   ) => {
     await Haptics.selectionAsync();
@@ -360,7 +380,7 @@ export default function HomeScreen() {
 
           <View style={styles.modeButtons}>
             <Pressable
-              onPress={() => handleModeChange('work')}
+              onPress={() => changeMode('work')}
               style={[
                 styles.modeButton,
                 {
@@ -397,7 +417,7 @@ export default function HomeScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => handleModeChange('vacation')}
+              onPress={() => changeMode('vacation')}
               style={[
                 styles.modeButton,
                 {
@@ -529,19 +549,17 @@ export default function HomeScreen() {
                 { color: colors.text },
               ]}
             >
-              {currentWeight || '--'} {t.kg}
+              {currentWeight} {t.kg}
             </Text>
 
-            {targetWeight > 0 && (
-              <Text
-                style={[
-                  styles.metricTarget,
-                  { color: colors.mutedForeground },
-                ]}
-              >
-                {t.target}: {targetWeight} {t.kg}
-              </Text>
-            )}
+            <Text
+              style={[
+                styles.metricTarget,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              {t.target}: {targetWeight} {t.kg}
+            </Text>
           </View>
 
           <View
@@ -582,7 +600,7 @@ export default function HomeScreen() {
                 { color: colors.text },
               ]}
             >
-              {completedWater}/{waterGoal}
+              {waterCount}/{waterGoal}
             </Text>
 
             <Text
@@ -595,148 +613,124 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
-                <View
-          style={[
-            styles.sectionCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          <View style={styles.sectionHeader}>
-            <View style={{ flex: 1 }}>
-              <Text
-                style={[
-                  styles.sectionTitle,
-                  { color: colors.text },
-                  state.language === 'ar' && styles.rtlText,
-                ]}
-              >
-                {t.water}
-              </Text>
+                <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>{t.water}</Text>
+            <Text style={styles.sectionSubtitle}>
+              {waterCount} / {waterGoal} {t.glasses}
+            </Text>
+          </View>
 
-              <Text
-                style={[
-                  styles.sectionSubtitle,
-                  { color: colors.mutedForeground },
-                  state.language === 'ar' && styles.rtlText,
-                ]}
-              >
-                {completedWater} / {waterGoal} {t.glasses}
-              </Text>
-            </View>
-
+          <View style={styles.waterBadge}>
             <Feather
               name="droplet"
-              size={24}
+              size={18}
               color={colors.primary}
             />
           </View>
+        </View>
 
-          <View style={styles.waterGrid}>
+        <View style={styles.waterCard}>
+          <View style={styles.waterTopRow}>
+            <Text style={styles.waterTitle}>
+              {waterCount} {t.glasses}
+            </Text>
+
+            <Text style={styles.waterPercent}>
+              {Math.round((waterCount / waterGoal) * 100)}%
+            </Text>
+          </View>
+
+          <View style={styles.waterProgressTrack}>
+            <Animated.View
+              style={[
+                styles.waterProgressFill,
+                {
+                  width: `${Math.min(
+                    (waterCount / waterGoal) * 100,
+                    100
+                  )}%`,
+                  backgroundColor: colors.primary,
+                },
+              ]}
+            />
+          </View>
+
+          <View style={styles.glassesRow}>
             {Array.from({ length: waterGoal }).map((_, index) => {
-              const checked = !!log.waterGlasses[index];
+              const filled = index < waterCount;
 
               return (
                 <Pressable
                   key={`water-${index}`}
-                  onPress={async () => {
-                    await Haptics.selectionAsync();
-                    toggleWater(
-                      index,
-                      todayDay,
-                      state.mode
-                    );
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    toggleWater(index, todayDay, state.mode);
                   }}
                   style={[
-                    styles.waterItem,
+                    styles.glassButton,
                     {
-                      backgroundColor: checked
+                      backgroundColor: filled
                         ? colors.primary
                         : colors.muted,
+                      borderColor: filled
+                        ? colors.primary
+                        : colors.border,
                     },
                   ]}
                 >
                   <Feather
                     name="droplet"
-                    size={20}
+                    size={18}
                     color={
-                      checked
+                      filled
                         ? colors.primaryForeground
                         : colors.mutedForeground
                     }
                   />
-
-                  <Text
-                    style={[
-                      styles.waterNumber,
-                      {
-                        color: checked
-                          ? colors.primaryForeground
-                          : colors.mutedForeground,
-                      },
-                    ]}
-                  >
-                    {index + 1}
-                  </Text>
                 </Pressable>
               );
             })}
           </View>
         </View>
 
-        <View style={styles.sectionHeaderOutside}>
-          <Text
-            style={[
-              styles.largeSectionTitle,
-              { color: colors.text },
-              state.language === 'ar' && styles.rtlText,
-            ]}
-          >
-            {t.meals}
-          </Text>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>{t.meals}</Text>
+            <Text style={styles.sectionSubtitle}>
+              {completedMeals} / {plan.meals.length}
+            </Text>
+          </View>
 
-          <Text
+          <View
             style={[
-              styles.sectionCount,
-              { color: colors.mutedForeground },
+              styles.sectionIcon,
+              { backgroundColor: colors.lavender },
             ]}
           >
-            {completedMeals}/{plan.meals.length}
-          </Text>
+            <Feather
+              name="coffee"
+              size={18}
+              color={colors.lavenderStrong}
+            />
+          </View>
         </View>
 
-        <View
-          style={[
-            styles.listCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <View style={styles.listCard}>
           {plan.meals.map((meal, index) => {
-            const checked = !!log.meals[index];
+            const done = !!log.meals[meal.id];
 
             return (
               <View
                 key={meal.id}
                 style={[
                   styles.listItem,
-                  index < plan.meals.length - 1 &&
+                  index !== plan.meals.length - 1 &&
                     styles.listItemBorder,
-                  {
-                    borderBottomColor: colors.border,
-                  },
+                  { borderBottomColor: colors.border },
                 ]}
               >
-                <View
-                  style={[
-                    styles.timeBadge,
-                    { backgroundColor: colors.mint },
-                  ]}
-                >
+                <View style={styles.timeColumn}>
                   <Text
                     style={[
                       styles.timeText,
@@ -747,37 +741,25 @@ export default function HomeScreen() {
                   </Text>
                 </View>
 
-                <View style={styles.listContent}>
+                <View style={styles.itemContent}>
                   <Text
                     style={[
-                      styles.listTitle,
-                      { color: colors.text },
-                      checked && styles.completedText,
-                      state.language === 'ar' &&
-                        styles.rtlText,
+                      styles.itemTitle,
+                      done && styles.doneText,
                     ]}
                   >
                     {meal.title}
                   </Text>
 
-                  <Text
-                    style={[
-                      styles.listDetail,
-                      { color: colors.mutedForeground },
-                      checked && styles.completedText,
-                      state.language === 'ar' &&
-                        styles.rtlText,
-                    ]}
-                  >
+                  <Text style={styles.itemDetail}>
                     {meal.detail}
                   </Text>
                 </View>
 
                 <CheckButton
-                  checked={checked}
-                  onPress={async () => {
-                    await Haptics.selectionAsync();
-
+                  checked={done}
+                  onPress={() => {
+                    Haptics.selectionAsync();
                     toggleMeal(
                       meal.id,
                       todayDay,
@@ -790,97 +772,80 @@ export default function HomeScreen() {
           })}
         </View>
 
-        <View style={styles.sectionHeaderOutside}>
-          <Text
-            style={[
-              styles.largeSectionTitle,
-              { color: colors.text },
-              state.language === 'ar' && styles.rtlText,
-            ]}
-          >
-            {t.movement}
-          </Text>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>{t.movement}</Text>
+            <Text style={styles.sectionSubtitle}>
+              {completedExercises} / {plan.exercises.length}
+            </Text>
+          </View>
 
-          <Text
+          <View
             style={[
-              styles.sectionCount,
-              { color: colors.mutedForeground },
+              styles.sectionIcon,
+              { backgroundColor: colors.mint },
             ]}
           >
-            {completedExercises}/{plan.exercises.length}
-          </Text>
+            <Feather
+              name="activity"
+              size={18}
+              color={colors.success}
+            />
+          </View>
         </View>
 
-        <View
-          style={[
-            styles.listCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <View style={styles.listCard}>
           {plan.exercises.map((exercise, index) => {
-            const checked = !!log.exercises[index];
+            const done = !!log.exercises[exercise.id];
 
             return (
               <View
                 key={exercise.id}
                 style={[
-                  styles.listItem,
-                  index < plan.exercises.length - 1 &&
+                  styles.exerciseItem,
+                  index !== plan.exercises.length - 1 &&
                     styles.listItemBorder,
-                  {
-                    borderBottomColor: colors.border,
-                  },
+                  { borderBottomColor: colors.border },
                 ]}
               >
                 <View
                   style={[
                     styles.exerciseIcon,
                     {
-                      backgroundColor: colors.lavender,
+                      backgroundColor: colors.secondary,
                     },
                   ]}
                 >
                   <Feather
                     name="activity"
-                    size={20}
-                    color={colors.lavenderStrong}
+                    size={19}
+                    color={colors.primary}
                   />
                 </View>
 
-                <View style={styles.listContent}>
+                <View style={styles.itemContent}>
                   <Text
                     style={[
-                      styles.listTitle,
-                      { color: colors.text },
-                      checked && styles.completedText,
-                      state.language === 'ar' &&
-                        styles.rtlText,
+                      styles.itemTitle,
+                      done && styles.doneText,
                     ]}
                   >
                     {exercise.title}
                   </Text>
 
-                  <Text
-                    style={[
-                      styles.listDetail,
-                      { color: colors.mutedForeground },
-                      checked && styles.completedText,
-                      state.language === 'ar' &&
-                        styles.rtlText,
-                    ]}
-                  >
-                    {exercise.duration} · {exercise.difficulty}
+                  <Text style={styles.itemDetail}>
+                    {exercise.duration} • {exercise.difficulty}
+                  </Text>
+
+                  <Text style={styles.exerciseInstructions}>
+                    {exercise.instructions}
                   </Text>
                 </View>
 
                 <CheckButton
-                  checked={checked}
-                  onPress={async () => {
-                    await Haptics.selectionAsync();
-
+                  checked={done}
+                  onPress={() => {
+                    Haptics.selectionAsync();
                     toggleExercise(
                       exercise.id,
                       todayDay,
@@ -893,81 +858,78 @@ export default function HomeScreen() {
           })}
         </View>
 
-        <View style={styles.sectionHeaderOutside}>
-          <Text
-            style={[
-              styles.largeSectionTitle,
-              { color: colors.text },
-              state.language === 'ar' && styles.rtlText,
-            ]}
-          >
-            {t.schedule}
-          </Text>
+        <View style={styles.sectionHeader}>
+          <View>
+            <Text style={styles.sectionTitle}>{t.schedule}</Text>
+            <Text style={styles.sectionSubtitle}>
+              {completedSchedule} / {activeSchedule.length}
+            </Text>
+          </View>
 
-          <Text
+          <View
             style={[
-              styles.sectionCount,
-              { color: colors.mutedForeground },
+              styles.sectionIcon,
+              { backgroundColor: colors.lavender },
             ]}
           >
-            {completedSchedule}/
-            {state.mode === 'work'
-              ? plan.workSchedule.length
-              : plan.vacationSchedule.length}
-          </Text>
+            <Feather
+              name="clock"
+              size={18}
+              color={colors.lavenderStrong}
+            />
+          </View>
         </View>
 
-        <View
-          style={[
-            styles.listCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-            },
-          ]}
-        >
-          {(state.mode === 'work'
-            ? plan.workSchedule
-            : plan.vacationSchedule
-          ).map((item, index, items) => {
-            const checked = !!log.schedule[index];
+        <View style={styles.listCard}>
+          {activeSchedule.map((item, index) => {
+            const done = !!log.schedule[item.id];
 
             return (
               <View
                 key={item.id}
                 style={[
-                  styles.listItem,
-                  index < items.length - 1 &&
+                  styles.scheduleItem,
+                  index !== activeSchedule.length - 1 &&
                     styles.listItemBorder,
-                  {
-                    borderBottomColor: colors.border,
-                  },
+                  { borderBottomColor: colors.border },
                 ]}
               >
-                <View
-                  style={[
-                    styles.timeBadge,
-                    { backgroundColor: colors.lavender },
-                  ]}
-                >
+                <View style={styles.scheduleTime}>
                   <Text
                     style={[
                       styles.timeText,
-                      { color: colors.lavenderStrong },
+                      { color: colors.primary },
                     ]}
                   >
                     {item.time}
                   </Text>
                 </View>
 
-                <View style={styles.listContent}>
+                <View style={styles.scheduleIcon}>
+                  <Feather
+                    name={
+                      item.kind === 'water'
+                        ? 'droplet'
+                        : item.kind === 'meal'
+                          ? 'coffee'
+                          : item.kind === 'movement'
+                            ? 'activity'
+                            : item.kind === 'work'
+                              ? 'briefcase'
+                              : item.kind === 'rest'
+                                ? 'moon'
+                                : 'clock'
+                    }
+                    size={17}
+                    color={colors.primary}
+                  />
+                </View>
+
+                <View style={styles.itemContent}>
                   <Text
                     style={[
-                      styles.listTitle,
-                      { color: colors.text },
-                      checked && styles.completedText,
-                      state.language === 'ar' &&
-                        styles.rtlText,
+                      styles.itemTitle,
+                      done && styles.doneText,
                     ]}
                   >
                     {item.title}
@@ -975,10 +937,9 @@ export default function HomeScreen() {
                 </View>
 
                 <CheckButton
-                  checked={checked}
-                  onPress={async () => {
-                    await Haptics.selectionAsync();
-
+                  checked={done}
+                  onPress={() => {
+                    Haptics.selectionAsync();
                     toggleSchedule(
                       item.id,
                       todayDay,
@@ -991,70 +952,48 @@ export default function HomeScreen() {
           })}
         </View>
 
-        <View
-          style={[
-            styles.adviceCard,
-            {
-              backgroundColor: colors.lavender,
-              borderColor: colors.lavenderStrong,
-            },
-          ]}
-        >
-          <View
-            style={[
-              styles.adviceIcon,
-              { backgroundColor: colors.lavenderStrong },
-            ]}
-          >
+        <View style={styles.adviceCard}>
+          <View style={styles.adviceIcon}>
             <Feather
               name="heart"
               size={20}
-              color="#FFFFFF"
+              color={colors.coral}
             />
           </View>
 
           <View style={styles.adviceContent}>
-            <Text
-              style={[
-                styles.adviceTitle,
-                { color: colors.text },
-                state.language === 'ar' && styles.rtlText,
-              ]}
-            >
+            <Text style={styles.adviceTitle}>
               {t.advice}
             </Text>
 
-            <Text
-              style={[
-                styles.adviceText,
-                { color: colors.secondaryForeground },
-                state.language === 'ar' && styles.rtlText,
-              ]}
-            >
+            <Text style={styles.adviceText}>
               {advice}
             </Text>
           </View>
         </View>
+
+        <View style={styles.bottomSpacer} />
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
+  container: {
     flex: 1,
   },
 
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 18,
+  scrollContent: {
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 32,
   },
 
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 18,
+    marginBottom: 16,
   },
 
   headerText: {
@@ -1063,184 +1002,142 @@ const styles = StyleSheet.create({
 
   greeting: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     marginBottom: 3,
   },
 
   name: {
-    fontSize: 28,
+    fontSize: 27,
     fontWeight: '800',
-    marginBottom: 4,
-  },
-
-  date: {
-    fontSize: 13,
-    fontWeight: '500',
   },
 
   headerIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  romanticContainer: {
-    marginBottom: 18,
   },
 
   romanticCard: {
-    borderWidth: 1.5,
     borderRadius: 24,
-    backgroundColor: '#FFFFFF',
-    minHeight: 180,
+    padding: 20,
+    marginBottom: 18,
     overflow: 'hidden',
   },
 
-  romanticReveal: {
-    flex: 1,
-    minHeight: 180,
+  romanticTop: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-
-  heartCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 12,
   },
 
-  romanticTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#17343B',
-    textAlign: 'center',
-    marginBottom: 8,
+  romanticHeart: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
 
-  romanticHint: {
-    fontSize: 13,
-    lineHeight: 20,
-    color: '#6D7E7B',
-    textAlign: 'center',
+  romanticLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+
+  romanticTitle: {
+    fontSize: 18,
+    fontWeight: '800',
   },
 
   romanticMessage: {
-    minHeight: 180,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 22,
-  },
-
-  romanticText: {
     fontSize: 17,
     lineHeight: 27,
-    color: '#17343B',
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-
-  romanticSmall: {
-    fontSize: 12,
-    color: '#8E77B7',
-    marginTop: 14,
     fontWeight: '600',
   },
 
   modeCard: {
-    borderWidth: 1,
-    borderRadius: 22,
-    padding: 14,
-    marginBottom: 16,
-  },
-
-  modeButtons: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 12,
+    padding: 5,
+    borderRadius: 18,
+    marginBottom: 18,
   },
 
   modeButton: {
     flex: 1,
-    minHeight: 46,
-    borderRadius: 15,
-    flexDirection: 'row',
+    minHeight: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 10,
+    flexDirection: 'row',
   },
 
   modeButtonText: {
     fontSize: 13,
     fontWeight: '700',
+    marginLeft: 7,
   },
 
-  progressCard: {
-    borderRadius: 24,
-    padding: 18,
-    marginBottom: 16,
-  },
-
-  progressHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginBottom: 10,
   },
 
-  progressTitle: {
-    color: '#FFFFFF',
+  sectionTitle: {
     fontSize: 20,
     fontWeight: '800',
-    marginBottom: 5,
   },
 
-  progressSubtitle: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: 13,
-    fontWeight: '500',
+  sectionSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
   },
 
-  progressCircle: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.55)',
+  sectionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  progressNumber: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  progressCard: {
+    borderRadius: 20,
+    padding: 17,
+    marginBottom: 18,
+  },
+
+  progressTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+
+  progressTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  progressValue: {
+    fontSize: 18,
     fontWeight: '800',
   },
 
   progressTrack: {
-    height: 8,
-    borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    height: 10,
+    borderRadius: 5,
     overflow: 'hidden',
-    marginTop: 18,
   },
 
   progressFill: {
     height: '100%',
-    borderRadius: 8,
-    backgroundColor: '#FFFFFF',
-  },
-
-  progressRemaining: {
-    color: 'rgba(255,255,255,0.82)',
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 9,
+    borderRadius: 5,
   },
 
   metricsRow: {
@@ -1251,207 +1148,613 @@ const styles = StyleSheet.create({
 
   metricCard: {
     flex: 1,
-    borderWidth: 1,
-    borderRadius: 22,
-    padding: 15,
+    borderRadius: 20,
+    padding: 16,
+    minHeight: 104,
   },
 
   metricIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 10,
+    marginBottom: 9,
   },
 
   metricLabel: {
     fontSize: 12,
-    fontWeight: '600',
     marginBottom: 4,
   },
 
   metricValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '800',
   },
 
   metricTarget: {
     fontSize: 11,
-    marginTop: 4,
+    marginTop: 3,
   },
 
-  sectionCard: {
-    borderWidth: 1,
-    borderRadius: 22,
-    padding: 16,
-    marginBottom: 20,
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 15,
-  },
-
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-  },
-
-  sectionSubtitle: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-
-  waterGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 9,
-  },
-
-  waterItem: {
-    width: '22.5%',
-    minHeight: 58,
-    borderRadius: 16,
+  waterBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#D8EEE7',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  waterNumber: {
-    fontSize: 10,
-    fontWeight: '700',
-    marginTop: 2,
+  waterCard: {
+    borderRadius: 20,
+    padding: 17,
+    marginBottom: 18,
   },
 
-  sectionHeaderOutside: {
+  waterTopRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 10,
-    paddingHorizontal: 2,
   },
 
-  largeSectionTitle: {
-    fontSize: 20,
+  waterTitle: {
+    fontSize: 17,
     fontWeight: '800',
   },
 
-  sectionCount: {
-    fontSize: 12,
+  waterPercent: {
+    fontSize: 13,
     fontWeight: '700',
   },
 
-  listCard: {
-    borderWidth: 1,
-    borderRadius: 22,
+  waterProgressTrack: {
+    height: 9,
+    borderRadius: 5,
     overflow: 'hidden',
-    marginBottom: 20,
+    backgroundColor: '#EEF3F0',
+    marginBottom: 14,
+  },
+
+  waterProgressFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+
+  glassesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+
+  glassButton: {
+    width: 39,
+    height: 39,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  listCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 18,
   },
 
   listItem: {
-    minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    gap: 11,
+    padding: 15,
+    minHeight: 76,
   },
 
   listItemBorder: {
     borderBottomWidth: 1,
   },
 
-  timeBadge: {
-    minWidth: 58,
-    height: 40,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 7,
+  timeColumn: {
+    width: 56,
   },
 
   timeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
   },
 
-  exerciseIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  listContent: {
+  itemContent: {
     flex: 1,
+    paddingHorizontal: 8,
   },
 
-  listTitle: {
+  itemTitle: {
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 20,
   },
 
-  listDetail: {
-    fontSize: 11,
-    lineHeight: 17,
-    marginTop: 2,
+  itemDetail: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 3,
   },
 
-  completedText: {
+  doneText: {
     textDecorationLine: 'line-through',
     opacity: 0.55,
   },
 
-  checkButton: {
+  exerciseItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 15,
+    minHeight: 88,
+  },
+
+  exerciseIcon: {
     width: 38,
     height: 38,
-    borderRadius: 13,
-    backgroundColor: '#EEF3F0',
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  checkButtonDone: {
-    backgroundColor: '#2C9A77',
+  exerciseInstructions: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 4,
+  },
+
+  scheduleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    minHeight: 70,
+  },
+
+  scheduleTime: {
+    width: 55,
+  },
+
+  scheduleIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  checkButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
   },
 
   adviceCard: {
-    borderWidth: 1,
-    borderRadius: 22,
-    padding: 15,
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 10,
+    borderRadius: 20,
+    padding: 17,
+    marginTop: 2,
   },
 
   adviceIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   adviceContent: {
     flex: 1,
+    paddingLeft: 12,
   },
 
   adviceTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '800',
     marginBottom: 5,
   },
 
   adviceText: {
     fontSize: 13,
-    lineHeight: 21,
+    lineHeight: 20,
   },
 
-  rtlText: {
-    textAlign: 'right',
+  bottomSpacer: {
+    height: 20,
+  },
+});
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 32,
+  },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+
+  headerText: {
+    flex: 1,
+  },
+
+  greeting: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 3,
+  },
+
+  name: {
+    fontSize: 27,
+    fontWeight: '800',
+  },
+
+  headerIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  romanticCard: {
+    borderRadius: 24,
+    padding: 20,
+    marginBottom: 18,
+    overflow: 'hidden',
+  },
+
+  romanticTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  romanticHeart: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+
+  romanticLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 3,
+  },
+
+  romanticTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+
+  romanticMessage: {
+    fontSize: 17,
+    lineHeight: 27,
+    fontWeight: '600',
+  },
+
+  modeCard: {
+    flexDirection: 'row',
+    padding: 5,
+    borderRadius: 18,
+    marginBottom: 18,
+  },
+
+  modeButton: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+
+  modeButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginLeft: 7,
+  },
+
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+    marginBottom: 10,
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+
+  sectionSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+  },
+
+  sectionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  progressCard: {
+    borderRadius: 20,
+    padding: 17,
+    marginBottom: 18,
+  },
+
+  progressTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+
+  progressTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  progressValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+
+  progressTrack: {
+    height: 10,
+    borderRadius: 5,
+    overflow: 'hidden',
+  },
+
+  progressFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+
+  metricsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 18,
+  },
+
+  metricCard: {
+    flex: 1,
+    borderRadius: 20,
+    padding: 16,
+    minHeight: 104,
+  },
+
+  metricIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 9,
+  },
+
+  metricLabel: {
+    fontSize: 12,
+    marginBottom: 4,
+  },
+
+  metricValue: {
+    fontSize: 18,
+    fontWeight: '800',
+  },
+
+  metricTarget: {
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  waterBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  waterCard: {
+    borderRadius: 20,
+    padding: 17,
+    marginBottom: 18,
+  },
+
+  waterTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+
+  waterTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+  },
+
+  waterPercent: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  waterProgressTrack: {
+    height: 9,
+    borderRadius: 5,
+    overflow: 'hidden',
+    marginBottom: 14,
+  },
+
+  waterProgressFill: {
+    height: '100%',
+    borderRadius: 5,
+  },
+
+  glassesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+
+  glassButton: {
+    width: 39,
+    height: 39,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  listCard: {
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 18,
+  },
+
+  listItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    minHeight: 76,
+  },
+
+  listItemBorder: {
+    borderBottomWidth: 1,
+  },
+
+  timeColumn: {
+    width: 56,
+  },
+
+  timeText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  itemContent: {
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+
+  itemTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+  },
+
+  itemDetail: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+
+  doneText: {
+    textDecorationLine: 'line-through',
+    opacity: 0.55,
+  },
+
+  exerciseItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: 15,
+    minHeight: 88,
+  },
+
+  exerciseIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  exerciseInstructions: {
+    fontSize: 11,
+    lineHeight: 16,
+    marginTop: 4,
+  },
+
+  scheduleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 15,
+    minHeight: 70,
+  },
+
+  scheduleTime: {
+    width: 55,
+  },
+
+  scheduleIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  checkButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
+
+  adviceCard: {
+    flexDirection: 'row',
+    borderRadius: 20,
+    padding: 17,
+    marginTop: 2,
+  },
+
+  adviceIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  adviceContent: {
+    flex: 1,
+    paddingLeft: 12,
+  },
+
+  adviceTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    marginBottom: 5,
+  },
+
+  adviceText: {
+    fontSize: 13,
+    lineHeight: 20,
+  },
+
+  bottomSpacer: {
+    height: 20,
   },
 });
