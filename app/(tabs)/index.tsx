@@ -51,22 +51,31 @@ const romanticMessages: Record<Language, string[]> = {
 
 function RomanticWelcome({
   language,
-  colors,
 }: {
   language: Language;
-  colors: any;
 }) {
-  const day = new Date().getDate();
   const messages = romanticMessages[language];
+  const day = new Date().getDate();
   const message = messages[day % messages.length];
 
   const [opened, setOpened] = useState(false);
-  const scale = useRef(new Animated.Value(0.7)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-  const heartScale = useRef(new Animated.Value(1)).current;
+
+  const scale = useRef(
+    new Animated.Value(0.72)
+  ).current;
+
+  const opacity = useRef(
+    new Animated.Value(0)
+  ).current;
+
+  const heartScale = useRef(
+    new Animated.Value(1)
+  ).current;
 
   const openMessage = () => {
-    if (opened) return;
+    if (opened) {
+      return;
+    }
 
     setOpened(true);
 
@@ -81,18 +90,21 @@ function RomanticWelcome({
         tension: 70,
         useNativeDriver: true,
       }),
+
       Animated.timing(opacity, {
         toValue: 1,
         duration: 450,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
+
       Animated.sequence([
         Animated.timing(heartScale, {
           toValue: 1.3,
           duration: 160,
           useNativeDriver: true,
         }),
+
         Animated.spring(heartScale, {
           toValue: 1,
           friction: 4,
@@ -122,7 +134,6 @@ function RomanticWelcome({
       style={({ pressed }) => [
         styles.romanticCard,
         {
-          backgroundColor: colors.coral,
           opacity: pressed ? 0.94 : 1,
         },
       ]}
@@ -130,25 +141,42 @@ function RomanticWelcome({
       <Animated.View
         style={[
           styles.romanticHeart,
-          { transform: [{ scale: heartScale }] },
+          {
+            transform: [
+              {
+                scale: heartScale,
+              },
+            ],
+          },
         ]}
       >
         <Text style={styles.heartText}>♥</Text>
       </Animated.View>
 
       <View style={styles.romanticBody}>
-        <Text style={styles.romanticName}>Narimane</Text>
+        <Text style={styles.romanticName}>
+          Narimane
+        </Text>
 
         {!opened ? (
           <>
-            <Text style={styles.romanticHint}>{surprise}</Text>
-            <Text style={styles.romanticTap}>{tap}</Text>
+            <Text style={styles.romanticHint}>
+              {surprise}
+            </Text>
+
+            <Text style={styles.romanticTap}>
+              {tap}
+            </Text>
           </>
         ) : (
           <Animated.View
             style={{
               opacity,
-              transform: [{ scale }],
+              transform: [
+                {
+                  scale,
+                },
+              ],
             }}
           >
             <Text
@@ -156,7 +184,9 @@ function RomanticWelcome({
                 styles.romanticMessage,
                 {
                   textAlign:
-                    language === 'ar' ? 'right' : 'left',
+                    language === 'ar'
+                      ? 'right'
+                      : 'left',
                 },
               ]}
             >
@@ -211,6 +241,42 @@ function CheckButton({
   );
 }
 
+function ProgressBar({
+  value,
+  color,
+  backgroundColor,
+}: {
+  value: number;
+  color: string;
+  backgroundColor: string;
+}) {
+  const safeValue = Math.max(
+    0,
+    Math.min(100, value)
+  );
+
+  return (
+    <View
+      style={[
+        styles.track,
+        {
+          backgroundColor,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.fill,
+          {
+            backgroundColor: color,
+            width: `${safeValue}%`,
+          },
+        ]}
+      />
+    </View>
+  );
+}
+
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -244,19 +310,21 @@ export default function HomeScreen() {
       ? plan.workSchedule
       : plan.vacationSchedule;
 
-  const mealsDone = plan.meals.filter(
-    (meal) => !!log.meals[meal.id]
-  ).length;
+  const mealsDone =
+    plan.meals.filter(
+      (meal) => Boolean(log.meals[meal.id])
+    ).length;
 
   const exercisesDone =
     plan.exercises.filter(
       (exercise) =>
-        !!log.exercises[exercise.id]
+        Boolean(log.exercises[exercise.id])
     ).length;
 
   const scheduleDone =
     schedule.filter(
-      (item) => !!log.schedule[item.id]
+      (item) =>
+        Boolean(log.schedule[item.id])
     ).length;
 
   const tasksDone =
@@ -270,8 +338,13 @@ export default function HomeScreen() {
     schedule.length;
 
   const progress = useMemo(() => {
-    const current = Number(state.currentWeight);
-    const target = Number(state.targetWeight);
+    const current = Number(
+      state.currentWeight
+    );
+
+    const target = Number(
+      state.targetWeight
+    );
 
     if (
       !Number.isFinite(current) ||
@@ -286,7 +359,9 @@ export default function HomeScreen() {
 
     const first =
       state.weightHistory.length > 0
-        ? Number(state.weightHistory[0].value)
+        ? Number(
+            state.weightHistory[0].value
+          )
         : current;
 
     if (
@@ -302,7 +377,10 @@ export default function HomeScreen() {
       100;
 
     return Math.round(
-      Math.max(0, Math.min(100, result))
+      Math.max(
+        0,
+        Math.min(100, result)
+      )
     );
   }, [
     state.currentWeight,
@@ -321,21 +399,34 @@ export default function HomeScreen() {
       ? state.profileName
       : 'Narimane';
 
-  const dayName =
-    getDayNames(state.language)[todayDay];
+  const dayNames = getDayNames(
+    state.language
+  );
 
-  const dateLabel = useMemo(
-    () =>
-      new Intl.DateTimeFormat(
+  const dayName =
+    dayNames[todayDay] ?? '';
+
+  const dateLabel = useMemo(() => {
+    try {
+      return new Intl.DateTimeFormat(
         state.language,
         {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
         }
-      ).format(new Date()),
-    [state.language]
-  );
+      ).format(new Date());
+    } catch {
+      return '';
+    }
+  }, [state.language]);
+
+  const isArabic =
+    state.language === 'ar';
+
+  const directionStyle = isArabic
+    ? styles.rtl
+    : undefined;
 
   return (
     <View
@@ -350,14 +441,27 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: insets.top + 16,
+          paddingTop:
+            insets.top + 16,
           paddingHorizontal: 20,
-          paddingBottom: insets.bottom + 110,
+          paddingBottom:
+            insets.bottom + 110,
         }}
       >
         {/* HEADER */}
-        <View style={styles.header}>
-          <View style={styles.headerText}>
+        <View
+          style={[
+            styles.header,
+            directionStyle,
+          ]}
+        >
+          <View
+            style={[
+              styles.headerText,
+              isArabic &&
+                styles.headerTextRtl,
+            ]}
+          >
             <Text
               style={[
                 styles.date,
@@ -365,6 +469,7 @@ export default function HomeScreen() {
                   color:
                     colors.mutedForeground,
                 },
+                directionStyle,
               ]}
             >
               {dateLabel}
@@ -376,9 +481,11 @@ export default function HomeScreen() {
                 {
                   color: colors.navy,
                 },
+                directionStyle,
               ]}
             >
-              {t.greeting}, {displayName}
+              {t.greeting},{' '}
+              {displayName}
             </Text>
 
             <Text
@@ -387,6 +494,7 @@ export default function HomeScreen() {
                 {
                   color: colors.primary,
                 },
+                directionStyle,
               ]}
             >
               {dayName} · {t.today}
@@ -410,10 +518,9 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ROMANTIC MESSAGE */}
+        {/* ROMANTIC SURPRISE */}
         <RomanticWelcome
           language={state.language}
-          colors={colors}
         />
 
         {/* MODE */}
@@ -424,15 +531,23 @@ export default function HomeScreen() {
               backgroundColor:
                 colors.mint,
             },
+            directionStyle,
           ]}
         >
-          <View style={styles.modeText}>
+          <View
+            style={[
+              styles.modeText,
+              isArabic &&
+                styles.modeTextRtl,
+            ]}
+          >
             <Text
               style={[
                 styles.modeTitle,
                 {
                   color: colors.navy,
                 },
+                directionStyle,
               ]}
             >
               {state.mode === 'work'
@@ -447,6 +562,7 @@ export default function HomeScreen() {
                   color:
                     colors.secondaryForeground,
                 },
+                directionStyle,
               ]}
             >
               {state.mode === 'work'
@@ -460,6 +576,7 @@ export default function HomeScreen() {
               Haptics.selectionAsync().catch(
                 () => undefined
               );
+
               setMode(
                 state.mode === 'work'
                   ? 'vacation'
@@ -486,14 +603,20 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        {/* TODAY */}
-        <View style={styles.sectionHeader}>
+        {/* TODAY HEADER */}
+        <View
+          style={[
+            styles.sectionHeader,
+            directionStyle,
+          ]}
+        >
           <Text
             style={[
               styles.sectionTitle,
               {
                 color: colors.navy,
               },
+              directionStyle,
             ]}
           >
             {t.today}
@@ -508,12 +631,14 @@ export default function HomeScreen() {
               },
             ]}
           >
-            {tasksDone}/{tasksTotal} {t.tasks}
+            {tasksDone}/{tasksTotal}{' '}
+            {t.tasks}
           </Text>
         </View>
 
         {/* METRICS */}
         <View style={styles.metrics}>
+          {/* WEIGHT */}
           <View
             style={[
               styles.metric,
@@ -548,6 +673,7 @@ export default function HomeScreen() {
                   color:
                     colors.mutedForeground,
                 },
+                directionStyle,
               ]}
             >
               {t.weight}
@@ -580,28 +706,18 @@ export default function HomeScreen() {
               {progress}% {t.progress}
             </Text>
 
-            <View
-              style={[
-                styles.track,
-                {
-                  backgroundColor:
-                    colors.muted,
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.fill,
-                  {
-                    backgroundColor:
-                      colors.lavenderStrong,
-                    width: `${progress}%`,
-                  },
-                ]}
-              />
-            </View>
+            <ProgressBar
+              value={progress}
+              color={
+                colors.lavenderStrong
+              }
+              backgroundColor={
+                colors.muted
+              }
+            />
           </View>
 
+          {/* WATER */}
           <View
             style={[
               styles.metric,
@@ -634,6 +750,7 @@ export default function HomeScreen() {
                   color:
                     colors.mutedForeground,
                 },
+                directionStyle,
               ]}
             >
               {t.water}
@@ -665,30 +782,17 @@ export default function HomeScreen() {
               {t.glasses}
             </Text>
 
-            <View
-              style={[
-                styles.track,
-                {
-                  backgroundColor:
-                    colors.muted,
-                },
-              ]}
-            >
-              <View
-                style={[
-                  styles.fill,
-                  {
-                    backgroundColor:
-                      colors.primary,
-                    width: `${waterProgress}%`,
-                  },
-                ]}
-              />
-            </View>
+            <ProgressBar
+              value={waterProgress}
+              color={colors.primary}
+              backgroundColor={
+                colors.muted
+              }
+            />
           </View>
         </View>
 
-        {/* WATER */}
+        {/* WATER TRACKER */}
         <View
           style={[
             styles.waterCard,
@@ -698,8 +802,19 @@ export default function HomeScreen() {
             },
           ]}
         >
-          <View style={styles.waterTop}>
-            <View>
+          <View
+            style={[
+              styles.waterTop,
+              directionStyle,
+            ]}
+          >
+            <View
+              style={
+                isArabic
+                  ? styles.waterTextRtl
+                  : undefined
+              }
+            >
               <Text
                 style={[
                   styles.waterLabel,
@@ -707,6 +822,7 @@ export default function HomeScreen() {
                     color:
                       colors.mintStrong,
                   },
+                  directionStyle,
                 ]}
               >
                 {t.water}
@@ -718,6 +834,7 @@ export default function HomeScreen() {
                   {
                     color: colors.card,
                   },
+                  directionStyle,
                 ]}
               >
                 {log.waterGlasses >= 8
@@ -738,7 +855,8 @@ export default function HomeScreen() {
               { length: 8 },
               (_, index) => {
                 const filled =
-                  index < log.waterGlasses;
+                  index <
+                  log.waterGlasses;
 
                 return (
                   <Pressable
@@ -747,6 +865,7 @@ export default function HomeScreen() {
                       Haptics.selectionAsync().catch(
                         () => undefined
                       );
+
                       toggleWater(
                         index,
                         todayDay,
@@ -780,72 +899,4 @@ export default function HomeScreen() {
                 );
               }
             )}
-          </View>
-
-          <Text
-            style={[
-              styles.waterCount,
-              {
-                color: colors.mint,
-              },
-            ]}
-          >
-            {log.waterGlasses}/8 {t.glasses}
-          </Text>
-        </View>
-
-        {/* MEALS */}
-        <View style={styles.sectionHeader}>
-          <Text
-            style={[
-              styles.sectionTitle,
-              {
-                color: colors.navy,
-              },
-            ]}
-          >
-            {t.meals}
-          </Text>
-
-          <Text
-            style={[
-              styles.sectionMeta,
-              {
-                color:
-                  colors.mutedForeground,
-              },
-            ]}
-          >
-            {mealsDone}/{plan.meals.length}
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.listCard,
-            {
-              backgroundColor:
-                colors.card,
-            },
-          ]}
-        >
-          {plan.meals.map(
-            (meal, index) => {
-              const checked =
-                !!log.meals[meal.id];
-
-              return (
-                <Pressable
-                  key={meal.id}
-                  onPress={() => {
-                    Haptics.selectionAsync().catch(
-                      () => undefined
-                    );
-                    toggleMeal(
-                      meal.id,
-                      todayDay,
-                      state.mode
-                    );
-                  }}
-                  style={[
-                    styles.listR
+          <
