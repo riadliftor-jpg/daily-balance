@@ -1,9 +1,1 @@
-*** Begin Patch
-*** Update File: context/DailyBalanceContext.tsx
-@@
--  profileName: 'Alex',
-+  profileName: 'Narimane',
-@@
--  const updateProfile = useCallback((name: string, currentWeight: number, targetWeight: number) => setState((current) => ({ ...current, profileName: name.trim() || 'Alex', currentWeight, targetWeight })), []);
-+  const updateProfile = useCallback((name: string, currentWeight: number, targetWeight: number) => setState((current) => ({ ...current, profileName: name.trim() || 'Narimane', currentWeight, targetWeight })), []);
-*** End Patch
+
